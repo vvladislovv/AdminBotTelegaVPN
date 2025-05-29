@@ -1,0 +1,114 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING
+  CLOSED
+}
+
+enum SubscriptionPlan {
+  BASIC
+  PREMIUM
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  PENDING
+  PAID
+  EXPIRED
+  CANCELLED
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  email         String         @unique
+  password      String
+  name          String?
+  role          String         @default("USER")
+  telegramId    String?        @unique
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  bots          Bot[]
+  tickets       Ticket[]
+  subscriptions Subscription[]
+}
+
+model Bot {
+  id            Int            @id @default(autoincrement())
+  token         String         @unique
+  username      String         @unique
+  name          String
+  isActive      Boolean        @default(true)
+  userId        Int
+  user          User           @relation(fields: [userId], references: [id])
+  tickets       Ticket[]
+  crmUsers      CrmUser[]
+  subscriptions Subscription[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Ticket {
+  id         Int             @id @default(autoincrement())
+  subject    String
+  message    String
+  status     TicketStatus    @default(OPEN)
+  botId      Int
+  bot        Bot             @relation(fields: [botId], references: [id])
+  userId     Int
+  user       User            @relation(fields: [userId], references: [id])
+  telegramId String
+  messages   TicketMessage[]
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+}
+
+model TicketMessage {
+  id          Int      @id @default(autoincrement())
+  message     String
+  isFromAdmin Boolean  @default(false)
+  ticketId    Int
+  ticket      Ticket   @relation(fields: [ticketId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model CrmUser {
+  id         Int      @id @default(autoincrement())
+  telegramId String   @unique
+  username   String?
+  firstName  String?
+  lastName   String?
+  botId      Int
+  bot        Bot      @relation(fields: [botId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Subscription {
+  id        Int                @id @default(autoincrement())
+  userId    Int
+  user      User               @relation(fields: [userId], references: [id])
+  botId     Int
+  bot       Bot                @relation(fields: [botId], references: [id])
+  plan      SubscriptionPlan
+  status    SubscriptionStatus @default(PENDING)
+  amount    Float
+  invoiceId String
+  expiresAt DateTime?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+}
