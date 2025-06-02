@@ -209,7 +209,49 @@ export class ClientsController {
     @ApiResponse({ status: 404, description: 'Клиент или тикет не найден' })
     @Roles(Role.Admin)
     async removeTicket(@Param('clientId') clientId: string, @Param('ticketId') ticketId: string) {
-        // Need to ensure the ticket belongs to the client
         return this.ticketsService.remove(+ticketId, +clientId);
+    }
+
+    // Ticket Messages endpoints
+    @Post(':clientId/tickets/:ticketId/messages')
+    @ApiOperation({ summary: 'Добавить сообщение в тикет клиента (Админ)' })
+    @ApiResponse({ status: 201, description: 'Сообщение успешно добавлено' })
+    @ApiResponse({ status: 400, description: 'Неверные данные' })
+    @ApiResponse({ status: 403, description: 'Доступ запрещен' })
+    @ApiResponse({ status: 404, description: 'Клиент или тикет не найден' })
+    @Roles(Role.Admin)
+    async addMessageToTicket(
+        @Param('clientId') clientId: string,
+        @Param('ticketId') ticketId: string,
+        @Body() messageData: { message: string },
+    ) {
+        // Проверяем существование клиента и тикета
+        await this.clientsService.findOne(+clientId);
+        await this.ticketsService.findOne(+ticketId, +clientId);
+
+        return this.ticketsService.addMessage(
+            +ticketId,
+            {
+                message: messageData.message,
+            },
+            +clientId,
+        );
+    }
+
+    @Get(':clientId/tickets/:ticketId/messages')
+    @ApiOperation({ summary: 'Получить сообщения тикета клиента (Админ)' })
+    @ApiResponse({ status: 200, description: 'Список сообщений' })
+    @ApiResponse({ status: 403, description: 'Доступ запрещен' })
+    @ApiResponse({ status: 404, description: 'Клиент или тикет не найден' })
+    @Roles(Role.Admin)
+    async getTicketMessages(
+        @Param('clientId') clientId: string,
+        @Param('ticketId') ticketId: string,
+    ) {
+        // Проверяем существование клиента и тикета
+        await this.clientsService.findOne(+clientId);
+        await this.ticketsService.findOne(+ticketId, +clientId);
+
+        return this.ticketsService.getMessages(+ticketId, +clientId);
     }
 }

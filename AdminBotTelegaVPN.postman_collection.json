@@ -539,23 +539,6 @@
             "name": "Admin",
             "item": [
                 {
-                    "name": "Admin Dashboard",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{baseUrl}}/admin",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["admin"]
-                        }
-                    }
-                },
-                {
                     "name": "Clients",
                     "item": [
                         {
