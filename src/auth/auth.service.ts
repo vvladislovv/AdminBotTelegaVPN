@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { MeService } from '../me/me.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterUserDto } from './dto/register-user.dto';
 
@@ -15,42 +16,49 @@ export class AuthService {
     constructor(
         private prisma: PrismaService,
         private jwtService: JwtService,
+        private meService: MeService,
     ) {}
 
-    async register(
-        registerUserDto: RegisterUserDto,
-    ): Promise<{ access_token: string; user: ValidateUserResult }> {
+    async register(registerUserDto: RegisterUserDto, referralCode?: string) {
+        const { email, password, name } = registerUserDto;
+
+        // Проверяем, существует ли пользователь
         const existingUser = await this.prisma.user.findUnique({
-            where: { email: registerUserDto.email },
+            where: { email },
         });
 
         if (existingUser) {
-            throw new ConflictException('Пользователь с таким email уже существует');
+            throw new ConflictException('User already exists');
         }
 
-        const hashedPassword = await bcrypt.hash(registerUserDto.password, 10);
+        // Хешируем пароль
+        const hashedPassword = await bcrypt.hash(password, 10);
 
+        // Создаем пользователя
         const user = await this.prisma.user.create({
             data: {
-                email: registerUserDto.email,
+                email,
                 password: hashedPassword,
-                name: registerUserDto.name,
-                // Default role is set in schema.prisma
+                name,
+                role: 'USER',
             },
         });
 
-        const { password: _, ...result } = user;
+        // Если есть реферальный код, обрабатываем его
+        if (referralCode) {
+            await this.meService.processReferralRegistration(referralCode, user.id);
+        }
 
-        // Generate access token for the newly registered user
-        const payload = { email: user.email, sub: user.id, role: user.role };
-        const access_token = this.jwtService.sign(payload);
+        // Генерируем токен
+        const token = this.jwtService.sign({ id: user.id, email: user.email });
 
         return {
-            access_token,
+            access_token: token,
             user: {
-                id: result.id,
-                email: result.email,
-                role: result.role,
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
             },
         };
     }

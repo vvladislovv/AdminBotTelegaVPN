@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RequestUser } from '../auth/interfaces/request.interface';
@@ -17,8 +17,7 @@ export class MeController {
     @ApiResponse({ status: 200, description: 'Список приглашенных' })
     @ApiResponse({ status: 401, description: 'Не авторизован' })
     async getReferrals(@Request() req: { user: RequestUser }) {
-        // TODO: Реализовать получение списка приглашенных
-        return { referrals: [] };
+        return this.meService.getReferrals(req.user.id);
     }
 
     @Get('/referrals/new')
@@ -26,8 +25,7 @@ export class MeController {
     @ApiResponse({ status: 200, description: 'Ссылка на регистрацию' })
     @ApiResponse({ status: 401, description: 'Не авторизован' })
     async getNewReferralLink(@Request() req: { user: RequestUser }) {
-        // TODO: Реализовать получение ссылки на регистрацию
-        return { link: 'https://test.ru/register?ref=YOUR_USER_ID' };
+        return this.meService.getNewReferralLink(req.user.id);
     }
 
     @Get('/referrals/bonuses')
@@ -35,8 +33,15 @@ export class MeController {
     @ApiResponse({ status: 200, description: 'Сумма бонусов' })
     @ApiResponse({ status: 401, description: 'Не авторизован' })
     async getReferralBonuses(@Request() req: { user: RequestUser }) {
-        // TODO: Реализовать получение суммы бонусов
-        return { bonuses: 0 };
+        return this.meService.getReferralBonuses(req.user.id);
+    }
+
+    @Get('/referrals/track/:code')
+    @ApiOperation({ summary: 'Отследить клик по реферальной ссылке' })
+    @ApiResponse({ status: 200, description: 'Клик успешно зарегистрирован' })
+    @ApiResponse({ status: 404, description: 'Реферальная ссылка не найдена' })
+    async trackReferralClick(@Param('code') code: string) {
+        return this.meService.trackReferralClick(code);
     }
 
     @Post('/billing/subscribe')

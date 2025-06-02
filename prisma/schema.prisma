@@ -45,6 +45,12 @@ model User {
   bots          Bot[]
   tickets       Ticket[]
   subscriptions Subscription[]
+  referralCode  String?        @unique
+  referredBy    Int?
+  referrer      User?          @relation("UserReferrals", fields: [referredBy], references: [id])
+  referrals     User[]         @relation("UserReferrals")
+  referralLinks ReferralLink[]
+  referralStats ReferralStats?
 }
 
 model Bot {
@@ -112,4 +118,28 @@ model Subscription {
   expiresAt DateTime?
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
+}
+
+model ReferralLink {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  clicks      Int      @default(0)
+  conversions Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ReferralStats {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @unique
+  user            User      @relation(fields: [userId], references: [id])
+  totalReferrals  Int       @default(0)
+  activeReferrals Int       @default(0)
+  totalBonus      Float     @default(0)
+  pendingBonus    Float     @default(0)
+  lastBonusDate   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }

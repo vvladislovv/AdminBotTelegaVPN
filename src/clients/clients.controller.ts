@@ -17,6 +17,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { BotsService } from '../bots/bots.service';
 import { CreateBotDto } from '../bots/dto/create-bot.dto';
 import { UpdateBotDto } from '../bots/dto/update-bot.dto';
+import { MeService } from '../me/me.service';
 import { CreateTicketDto } from '../tickets/dto/create-ticket.dto';
 import { UpdateTicketDto } from '../tickets/dto/update-ticket.dto';
 import { TicketsService } from '../tickets/tickets.service';
@@ -33,6 +34,7 @@ export class ClientsController {
         private readonly clientsService: ClientsService,
         private readonly botsService: BotsService,
         private readonly ticketsService: TicketsService,
+        private readonly meService: MeService,
     ) {}
 
     @Post()
@@ -253,5 +255,73 @@ export class ClientsController {
         await this.ticketsService.findOne(+ticketId, +clientId);
 
         return this.ticketsService.getMessages(+ticketId, +clientId);
+    }
+
+    // Admin Referral Endpoints
+    @Get(':clientId/me/referrals')
+    @ApiOperation({ summary: 'Получить список приглашенных пользователем (Админ)' })
+    @ApiResponse({ status: 200, description: 'Список приглашенных пользователей' })
+    @ApiResponse({ status: 403, description: 'Доступ запрещен' })
+    @ApiResponse({ status: 404, description: 'Клиент не найден' })
+    async getClientReferrals(@Param('clientId') clientId: string) {
+        return this.meService.getReferrals(+clientId);
+    }
+
+    @Get(':clientId/me/referrals/stats')
+    @ApiOperation({ summary: 'Получить статистику рефералов пользователя (Админ)' })
+    @ApiResponse({ status: 200, description: 'Статистика рефералов' })
+    @ApiResponse({ status: 403, description: 'Доступ запрещен' })
+    @ApiResponse({ status: 404, description: 'Клиент не найден' })
+    async getClientReferralStats(@Param('clientId') clientId: string) {
+        return this.meService.getReferralStats(+clientId);
+    }
+
+    @Get(':clientId/me/referrals/links')
+    @ApiOperation({ summary: 'Получить реферальные ссылки пользователя (Админ)' })
+    @ApiResponse({ status: 200, description: 'Список реферальных ссылок' })
+    @ApiResponse({ status: 403, description: 'Доступ запрещен' })
+    @ApiResponse({ status: 404, description: 'Клиент не найден' })
+    async getClientReferralLinks(@Param('clientId') clientId: string) {
+        // Note: MeService.getNewReferralLink is for generating *new* links.
+        // We need a method to get *existing* links for a user. Let's add that to MeService.
+        return this.meService.getReferralLinks(+clientId);
+    }
+
+    @Get(':clientId/me/referrals/bonuses')
+    @ApiOperation({ summary: 'Получить бонусы рефералов пользователя (Админ)' })
+    @ApiResponse({ status: 200, description: 'Сумма бонусов' })
+    @ApiResponse({ status: 403, description: 'Доступ запрещен' })
+    @ApiResponse({ status: 404, description: 'Клиент не найден' })
+    async getClientReferralBonuses(@Param('clientId') clientId: string) {
+        return this.meService.getReferralBonuses(+clientId);
+    }
+
+    @Patch(':clientId/me/referrals/bonuses')
+    @ApiOperation({ summary: 'Обновить бонусы рефералов пользователя (Админ)' })
+    @ApiResponse({ status: 200, description: 'Бонусы успешно обновлены' })
+    @ApiResponse({ status: 400, description: 'Неверные данные' })
+    @ApiResponse({ status: 403, description: 'Доступ запрещен' })
+    @ApiResponse({ status: 404, description: 'Клиент не найден' })
+    async updateClientReferralBonuses(
+        @Param('clientId') clientId: string,
+        @Body() updateBonusDto: { totalBonus?: number; pendingBonus?: number },
+    ) {
+        return this.meService.updateReferralBonuses(
+            +clientId,
+            updateBonusDto.totalBonus,
+            updateBonusDto.pendingBonus,
+        );
+    }
+
+    @Delete(':clientId/me/referrals/links/:linkId')
+    @ApiOperation({ summary: 'Удалить реферальную ссылку пользователя (Админ)' })
+    @ApiResponse({ status: 200, description: 'Ссылка успешно удалена' })
+    @ApiResponse({ status: 403, description: 'Доступ запрещен' })
+    @ApiResponse({ status: 404, description: 'Клиент или ссылка не найдены' })
+    async deleteClientReferralLink(
+        @Param('clientId') clientId: string,
+        @Param('linkId') linkId: string,
+    ) {
+        return this.meService.deleteReferralLink(+linkId, +clientId);
     }
 }

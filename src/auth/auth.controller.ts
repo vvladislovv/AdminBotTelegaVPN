@@ -3,6 +3,7 @@ import {
     Controller,
     Get,
     Post,
+    Query,
     Request,
     UnauthorizedException,
     UseGuards,
@@ -39,8 +40,9 @@ export class AuthController {
     @ApiResponse({ status: 409, description: 'Пользователь с таким email уже существует' })
     async register(
         @Body() registerUserDto: RegisterUserDto,
+        @Query('ref') referralCode?: string,
     ): Promise<{ access_token: string; user: ValidateUserResult }> {
-        return this.authService.register(registerUserDto);
+        return this.authService.register(registerUserDto, referralCode);
     }
 
     @UseGuards(LocalAuthGuard)

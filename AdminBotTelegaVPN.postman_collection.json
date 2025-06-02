@@ -112,6 +112,49 @@
                             "path": ["auth", "register"]
                         }
                     }
+                },
+                {
+                    "name": "Register with Referral",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.access_token) {",
+                                    "    pm.environment.set('token', jsonData.access_token);",
+                                    "    pm.environment.set('newUserToken', jsonData.access_token);",
+                                    "    console.log('Token saved successfully after registration with referral');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"new_user@example.com\",\n    \"password\": \"password123\",\n    \"name\": \"New User\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/register?ref={{referralCode}}",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "register"],
+                            "query": [
+                                {
+                                    "key": "ref",
+                                    "value": "{{referralCode}}"
+                                }
+                            ]
+                        }
+                    }
                 }
             ]
         },
@@ -119,55 +162,138 @@
             "name": "Me",
             "item": [
                 {
-                    "name": "Get Referrals",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
+                    "name": "Referrals",
+                    "item": [
+                        {
+                            "name": "Get Referrals",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/me/referrals",
+                                    "host": ["{{baseUrl}}"],
+                                    "path": ["me", "referrals"]
+                                }
                             }
-                        ],
-                        "url": {
-                            "raw": "{{baseUrl}}/me/referrals",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["me", "referrals"]
-                        }
-                    }
-                },
-                {
-                    "name": "Get New Referral Link",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
+                        },
+                        {
+                            "name": "Get New Referral Link",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "var jsonData = pm.response.json();",
+                                            "if (jsonData.code) {",
+                                            "    pm.environment.set('referralCode', jsonData.code);",
+                                            "    // Формируем полную ссылку для регистрации",
+                                            "    var fullLink = '{{baseUrl}}/auth/register?ref=' + jsonData.code;",
+                                            "    pm.environment.set('fullReferralLink', fullLink);",
+                                            "    console.log('Referral code saved:', jsonData.code);",
+                                            "    console.log('Full referral link:', fullLink);",
+                                            "}"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/me/referrals/new",
+                                    "host": ["{{baseUrl}}"],
+                                    "path": ["me", "referrals", "new"]
+                                }
                             }
-                        ],
-                        "url": {
-                            "raw": "{{baseUrl}}/me/referrals/new",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["me", "referrals", "new"]
-                        }
-                    }
-                },
-                {
-                    "name": "Get Referral Bonuses",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
+                        },
+                        {
+                            "name": "Simulate Referral Registration",
+                            "event": [
+                                {
+                                    "listen": "prerequest",
+                                    "script": {
+                                        "exec": [
+                                            "// Генерируем уникальный email для теста",
+                                            "var timestamp = new Date().getTime();",
+                                            "var testEmail = 'test_user_' + timestamp + '@example.com';",
+                                            "pm.environment.set('testEmail', testEmail);",
+                                            "console.log('Generated test email:', testEmail);"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"email\": \"{{testEmail}}\",\n    \"password\": \"password123\",\n    \"name\": \"Test User\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/register?ref={{referralCode}}",
+                                    "host": ["{{baseUrl}}"],
+                                    "path": ["auth", "register"],
+                                    "query": [
+                                        {
+                                            "key": "ref",
+                                            "value": "{{referralCode}}"
+                                        }
+                                    ]
+                                }
                             }
-                        ],
-                        "url": {
-                            "raw": "{{baseUrl}}/me/referrals/bonuses",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["me", "referrals", "bonuses"]
+                        },
+                        {
+                            "name": "Track Referral Click",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/me/referrals/track/{{referralCode}}",
+                                    "host": ["{{baseUrl}}"],
+                                    "path": ["me", "referrals", "track", "{{referralCode}}"]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Check Referral Status",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/me/referrals",
+                                    "host": ["{{baseUrl}}"],
+                                    "path": ["me", "referrals"]
+                                }
+                            }
                         }
-                    }
+                    ]
                 },
                 {
                     "name": "Subscribe Billing (TelegaPay)",
@@ -928,6 +1054,163 @@
                                     }
                                 }
                             ]
+                        },
+                        {
+                            "name": "Referrals (Admin)",
+                            "item": [
+                                {
+                                    "name": "Get Client Referrals",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/clients/{{clientId}}/me/referrals",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": [
+                                                "admin",
+                                                "clients",
+                                                "{{clientId}}",
+                                                "me",
+                                                "referrals"
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Get Client Referral Stats",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/clients/{{clientId}}/me/referrals/stats",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": [
+                                                "admin",
+                                                "clients",
+                                                "{{clientId}}",
+                                                "me",
+                                                "referrals",
+                                                "stats"
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Get Client Referral Links",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/clients/{{clientId}}/me/referrals/links",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": [
+                                                "admin",
+                                                "clients",
+                                                "{{clientId}}",
+                                                "me",
+                                                "referrals",
+                                                "links"
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Get Client Referral Bonuses",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/clients/{{clientId}}/me/referrals/bonuses",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": [
+                                                "admin",
+                                                "clients",
+                                                "{{clientId}}",
+                                                "me",
+                                                "referrals",
+                                                "bonuses"
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Update Client Referral Bonuses (Admin)",
+                                    "request": {
+                                        "method": "PATCH",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json"
+                                            }
+                                        ],
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"totalBonus\": 200,\n    \"pendingBonus\": 50\n}"
+                                        },
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/clients/{{clientId}}/me/referrals/bonuses",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": [
+                                                "admin",
+                                                "clients",
+                                                "{{clientId}}",
+                                                "me",
+                                                "referrals",
+                                                "bonuses"
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Delete Client Referral Link (Admin)",
+                                    "request": {
+                                        "method": "DELETE",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/clients/{{clientId}}/me/referrals/links/{{linkId}}",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": [
+                                                "admin",
+                                                "clients",
+                                                "{{clientId}}",
+                                                "me",
+                                                "referrals",
+                                                "links",
+                                                "{{linkId}}"
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     ]
                 }
@@ -1355,6 +1638,10 @@
                     "    });",
                     "} else {",
                     "    console.log('Token exists:', pm.environment.get('token'));",
+                    "}",
+                    "// Устанавливаем frontend URL если не установлен",
+                    "if (!pm.environment.get('frontendUrl')) {",
+                    "    pm.environment.set('frontendUrl', 'http://localhost:3000');",
                     "}"
                 ]
             }
