@@ -16,11 +16,14 @@ export class TicketsService {
 
     async create(createTicketDto: CreateTicketDto, userId: number): Promise<TicketWithRelations> {
         const bot = await this.prisma.bot.findFirst({
-            where: { id: createTicketDto.botId },
+            where: {
+                id: createTicketDto.botId,
+                userId: userId,
+            },
         });
 
         if (!bot) {
-            throw new NotFoundException('Бот не найден');
+            throw new NotFoundException('Бот не найден или не принадлежит вам');
         }
 
         const ticket = await this.prisma.ticket.create({
@@ -122,6 +125,12 @@ export class TicketsService {
             throw new NotFoundException('Тикет не найден');
         }
 
+        // Сначала удаляем все сообщения тикета
+        await this.prisma.ticketMessage.deleteMany({
+            where: { ticketId: id },
+        });
+
+        // Затем удаляем сам тикет
         await this.prisma.ticket.delete({
             where: { id },
         });

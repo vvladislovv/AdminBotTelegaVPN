@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Request, UseGuards } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Get,
+    Post,
+    Request,
+    UnauthorizedException,
+    UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService, ValidateUserResult } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -14,10 +22,24 @@ export class AuthController {
 
     @Post('register')
     @ApiOperation({ summary: 'Регистрация нового пользователя' })
-    @ApiResponse({ status: 201, description: 'Пользователь успешно зарегистрирован' })
+    @ApiResponse({
+        status: 201,
+        description: 'Пользователь успешно зарегистрирован и авторизован',
+        schema: {
+            type: 'object',
+            properties: {
+                id: { type: 'number' },
+                email: { type: 'string' },
+                role: { type: 'string' },
+                access_token: { type: 'string' },
+            },
+        },
+    })
     @ApiResponse({ status: 400, description: 'Неверные данные' })
     @ApiResponse({ status: 409, description: 'Пользователь с таким email уже существует' })
-    async register(@Body() registerUserDto: RegisterUserDto): Promise<ValidateUserResult> {
+    async register(
+        @Body() registerUserDto: RegisterUserDto,
+    ): Promise<{ access_token: string; user: ValidateUserResult }> {
         return this.authService.register(registerUserDto);
     }
 
@@ -45,9 +67,11 @@ export class AuthController {
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Выход из системы' })
     @ApiResponse({ status: 200, description: 'Успешный выход' })
-    @ApiResponse({ status: 401, description: 'Не авторизован' })
-    async logout(@Request() req: { user: RequestUser }) {
-        // В будущем здесь можно добавить логику инвалидации токена
+    @ApiResponse({ status: 401, description: 'Требуется авторизация' })
+    async logout(@Request() req: { user?: RequestUser }) {
+        if (!this.authService.hasToken(req)) {
+            throw new UnauthorizedException('Требуется авторизация');
+        }
         return { message: 'Successfully logged out' };
     }
 }

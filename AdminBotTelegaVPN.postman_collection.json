@@ -79,6 +79,21 @@
                 },
                 {
                     "name": "Register",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.access_token) {",
+                                    "    pm.environment.set('token', jsonData.access_token);",
+                                    "    console.log('Token saved successfully after registration');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
                     "request": {
                         "method": "POST",
                         "header": [
@@ -266,7 +281,7 @@
                                 ],
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n    \"name\": \"Test Bot\",\n    \"token\": \"YOUR_BOT_TOKEN_HERE\",\n    \"username\": \"test_bot_username\"\n}"
+                                    "raw": "{\n    \"name\": \"Test Bot\",\n    \"token\": \"YOUR_BOT_TOKEN_HERE\",\n    \"username\": \"test_bot_username\",\n    \"link\": \"https://t.me/test_bot_username\"\n}"
                                 },
                                 "url": {
                                     "raw": "{{baseUrl}}/me/bots",
@@ -325,7 +340,7 @@
                                 ],
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n    \"name\": \"Updated Bot Name\",\n    \"token\": \"new_telegram_bot_token\"\n}"
+                                    "raw": "{\n    \"name\": \"Updated Bot Name\",\n    \"token\": \"new_telegram_bot_token\",\n    \"link\": \"https://t.me/updated_bot_username\"\n}"
                                 },
                                 "url": {
                                     "raw": "{{baseUrl}}/me/bots/1",
@@ -517,156 +532,6 @@
                             }
                         }
                     ]
-                },
-                {
-                    "name": "Users",
-                    "item": [
-                        {
-                            "name": "Get All Users",
-                            "request": {
-                                "method": "GET",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{token}}"
-                                    }
-                                ],
-                                "url": {
-                                    "raw": "{{baseUrl}}/me/users",
-                                    "host": ["{{baseUrl}}"],
-                                    "path": ["me", "users"]
-                                }
-                            }
-                        },
-                        {
-                            "name": "Get User by ID",
-                            "request": {
-                                "method": "GET",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{token}}"
-                                    }
-                                ],
-                                "url": {
-                                    "raw": "{{baseUrl}}/me/users/1",
-                                    "host": ["{{baseUrl}}"],
-                                    "path": ["me", "users", "1"]
-                                }
-                            }
-                        },
-                        {
-                            "name": "Update User",
-                            "request": {
-                                "method": "PATCH",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{token}}"
-                                    },
-                                    {
-                                        "key": "Content-Type",
-                                        "value": "application/json"
-                                    }
-                                ],
-                                "body": {
-                                    "mode": "raw",
-                                    "raw": "{\n    \"name\": \"Updated Name\",\n    \"email\": \"updated@email.com\"\n}"
-                                },
-                                "url": {
-                                    "raw": "{{baseUrl}}/me/users/1",
-                                    "host": ["{{baseUrl}}"],
-                                    "path": ["me", "users", "1"]
-                                }
-                            }
-                        },
-                        {
-                            "name": "Delete User",
-                            "request": {
-                                "method": "DELETE",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{token}}"
-                                    }
-                                ],
-                                "url": {
-                                    "raw": "{{baseUrl}}/me/users/1",
-                                    "host": ["{{baseUrl}}"],
-                                    "path": ["me", "users", "1"]
-                                }
-                            }
-                        }
-                    ]
-                },
-                {
-                    "name": "CRM",
-                    "item": [
-                        {
-                            "name": "Get CRM Data",
-                            "request": {
-                                "method": "GET",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{token}}"
-                                    }
-                                ],
-                                "url": {
-                                    "raw": "{{baseUrl}}/me/crm/data",
-                                    "host": ["{{baseUrl}}"],
-                                    "path": ["me", "crm", "data"]
-                                }
-                            }
-                        },
-                        {
-                            "name": "Connect CRM",
-                            "request": {
-                                "method": "POST",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{token}}"
-                                    },
-                                    {
-                                        "key": "Content-Type",
-                                        "value": "application/json"
-                                    }
-                                ],
-                                "body": {
-                                    "mode": "raw",
-                                    "raw": "{\n    \"apiKey\": \"your_crm_api_key\",\n    \"crmUrl\": \"your_crm_url\"\n}"
-                                },
-                                "url": {
-                                    "raw": "{{baseUrl}}/me/crm/connect",
-                                    "host": ["{{baseUrl}}"],
-                                    "path": ["me", "crm", "connect"]
-                                }
-                            }
-                        }
-                    ]
-                },
-                {
-                    "name": "Billing",
-                    "item": [
-                        {
-                            "name": "Get Payment Link",
-                            "request": {
-                                "method": "GET",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{token}}"
-                                    }
-                                ],
-                                "url": {
-                                    "raw": "{{baseUrl}}/me/billing/link",
-                                    "host": ["{{baseUrl}}"],
-                                    "path": ["me", "billing", "link"]
-                                }
-                            }
-                        }
-                    ]
                 }
             ]
         },
@@ -746,9 +611,9 @@
                                     }
                                 ],
                                 "url": {
-                                    "raw": "{{baseUrl}}/admin/clients/1",
+                                    "raw": "{{baseUrl}}/admin/clients/{{clientId}}",
                                     "host": ["{{baseUrl}}"],
-                                    "path": ["admin", "clients", "1"]
+                                    "path": ["admin", "clients", "{{clientId}}"]
                                 }
                             }
                         },
@@ -771,9 +636,9 @@
                                     "raw": "{\n    \"name\": \"Updated Client Name\"\n}"
                                 },
                                 "url": {
-                                    "raw": "{{baseUrl}}/admin/clients/1",
+                                    "raw": "{{baseUrl}}/admin/clients/{{clientId}}",
                                     "host": ["{{baseUrl}}"],
-                                    "path": ["admin", "clients", "1"]
+                                    "path": ["admin", "clients", "{{clientId}}"]
                                 }
                             }
                         },
@@ -788,11 +653,298 @@
                                     }
                                 ],
                                 "url": {
-                                    "raw": "{{baseUrl}}/admin/clients/1",
+                                    "raw": "{{baseUrl}}/admin/clients/{{clientId}}",
                                     "host": ["{{baseUrl}}"],
-                                    "path": ["admin", "clients", "1"]
+                                    "path": ["admin", "clients", "{{clientId}}"]
                                 }
                             }
+                        },
+                        {
+                            "name": "Bots (Admin)",
+                            "item": [
+                                {
+                                    "name": "Create Bot for Client",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json"
+                                            }
+                                        ],
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"name\": \"Test Bot for Client\",\n    \"token\": \"YOUR_BOT_TOKEN_HERE\",\n    \"username\": \"@test_bot_username\"\n}"
+                                        },
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/clients/{{clientId}}/bots",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": ["admin", "clients", "{{clientId}}", "bots"]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Get Bot for Client by ID",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/clients/{{clientId}}/bots/{{botId}}",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": [
+                                                "admin",
+                                                "clients",
+                                                "{{clientId}}",
+                                                "bots",
+                                                "{{botId}}"
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Update Bot for Client",
+                                    "request": {
+                                        "method": "PATCH",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json"
+                                            }
+                                        ],
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"name\": \"Updated Bot Name\",\n    \"token\": \"new_telegram_bot_token\",\n    \"username\": \"@updated_bot_username\"\n}"
+                                        },
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/clients/{{clientId}}/bots/{{botId}}",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": [
+                                                "admin",
+                                                "clients",
+                                                "{{clientId}}",
+                                                "bots",
+                                                "{{botId}}"
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Delete Bot for Client",
+                                    "request": {
+                                        "method": "DELETE",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/clients/{{clientId}}/bots/{{botId}}",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": [
+                                                "admin",
+                                                "clients",
+                                                "{{clientId}}",
+                                                "bots",
+                                                "{{botId}}"
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Tickets (Admin)",
+                            "item": [
+                                {
+                                    "name": "Get All Tickets for Client",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/clients/{{clientId}}/tickets",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": ["admin", "clients", "{{clientId}}", "tickets"]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Create Ticket for Client",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json"
+                                            }
+                                        ],
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"subject\": \"Test Ticket for Client\",\n    \"message\": \"Message for client ticket\",\n    \"botId\": 1,\n    \"telegramId\": 123456789\n}"
+                                        },
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/clients/{{clientId}}/tickets",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": ["admin", "clients", "{{clientId}}", "tickets"]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Get Ticket for Client by ID",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/clients/{{clientId}}/tickets/{{ticketId}}",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": [
+                                                "admin",
+                                                "clients",
+                                                "{{clientId}}",
+                                                "tickets",
+                                                "{{ticketId}}"
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Update Ticket for Client",
+                                    "request": {
+                                        "method": "PATCH",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json"
+                                            }
+                                        ],
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"status\": \"CLOSED\"\n}"
+                                        },
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/clients/{{clientId}}/tickets/{{ticketId}}",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": [
+                                                "admin",
+                                                "clients",
+                                                "{{clientId}}",
+                                                "tickets",
+                                                "{{ticketId}}"
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Delete Ticket for Client",
+                                    "request": {
+                                        "method": "DELETE",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/clients/{{clientId}}/tickets/{{ticketId}}",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": [
+                                                "admin",
+                                                "clients",
+                                                "{{clientId}}",
+                                                "tickets",
+                                                "{{ticketId}}"
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Add Message to Ticket for Client",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json"
+                                            }
+                                        ],
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"message\": \"New message from admin\"\n}"
+                                        },
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/clients/{{clientId}}/tickets/{{ticketId}}/messages",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": [
+                                                "admin",
+                                                "clients",
+                                                "{{clientId}}",
+                                                "tickets",
+                                                "{{ticketId}}",
+                                                "messages"
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Get Ticket Messages for Client",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/clients/{{clientId}}/tickets/{{ticketId}}/messages",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": [
+                                                "admin",
+                                                "clients",
+                                                "{{clientId}}",
+                                                "tickets",
+                                                "{{ticketId}}",
+                                                "messages"
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     ]
                 }

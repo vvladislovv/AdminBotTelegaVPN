@@ -52,6 +52,7 @@ model Bot {
   token         String         @unique
   username      String         @unique
   name          String
+  link          String
   isActive      Boolean        @default(true)
   userId        Int
   user          User           @relation(fields: [userId], references: [id])

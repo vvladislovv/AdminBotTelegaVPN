@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { TicketStatus } from '@prisma/client';
+import { EncryptionService } from '../encryption/encryption.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 import { CreateBotDto } from './dto/create-bot.dto';
@@ -15,6 +16,7 @@ export class BotsService {
     constructor(
         private prisma: PrismaService,
         private rabbitMQService: RabbitMQService,
+        private encryptionService: EncryptionService,
     ) {}
 
     async create(createBotDto: CreateBotDto, userId: number) {
@@ -28,27 +30,33 @@ export class BotsService {
             throw new ConflictException('Бот с таким токеном или username уже существует');
         }
 
+        const encryptedToken = this.encryptionService.encrypt(createBotDto.token);
+
         const bot = await this.prisma.bot.create({
             data: {
                 ...createBotDto,
+                token: encryptedToken,
                 userId,
+                link: `https://t.me/${createBotDto.username.substring(1)}`,
             },
         });
 
         await this.rabbitMQService.publishMessage('bot_commands', {
             type: 'init',
             botId: bot.id,
-            token: bot.token,
-            username: bot.username,
+            token: this.encryptionService.decrypt(bot.token),
+            username: bot.username.substring(1),
         });
 
         return bot;
     }
 
     async findAll(userId: number) {
-        return this.prisma.bot.findMany({
+        const bots = await this.prisma.bot.findMany({
             where: { userId },
         });
+
+        return bots;
     }
 
     async findOne(id: number, userId: number) {
@@ -69,7 +77,14 @@ export class BotsService {
         if (updateBotDto.token || updateBotDto.username) {
             const existingBot = await this.prisma.bot.findFirst({
                 where: {
-                    OR: [{ token: updateBotDto.token }, { username: updateBotDto.username }],
+                    OR: [
+                        {
+                            token: updateBotDto.token
+                                ? this.encryptionService.encrypt(updateBotDto.token)
+                                : undefined,
+                        },
+                        { username: updateBotDto.username },
+                    ],
                     NOT: { id },
                 },
             });
@@ -79,17 +94,29 @@ export class BotsService {
             }
         }
 
+        const dataToUpdate: any = { ...updateBotDto };
+        if (updateBotDto.token) {
+            dataToUpdate.token = this.encryptionService.encrypt(updateBotDto.token);
+        }
+        if (updateBotDto.username) {
+            dataToUpdate.link = `https://t.me/${updateBotDto.username.substring(1)}`;
+        }
+
         const updatedBot = await this.prisma.bot.update({
             where: { id },
-            data: updateBotDto,
+            data: dataToUpdate,
         });
 
         if (updateBotDto.token || updateBotDto.username) {
             await this.rabbitMQService.publishMessage('bot_commands', {
                 type: 'update',
                 botId: bot.id,
-                token: updateBotDto.token || bot.token,
-                username: updateBotDto.username || bot.username,
+                token: updateBotDto.token
+                    ? this.encryptionService.decrypt(updatedBot.token)
+                    : this.encryptionService.decrypt(bot.token),
+                username: updateBotDto.username
+                    ? updateBotDto.username.substring(1)
+                    : bot.username.substring(1),
             });
         }
 

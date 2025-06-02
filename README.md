@@ -80,32 +80,32 @@ python bot/main.py
 
 ## API Endpoints
 
-### Аутентификация
-- POST /api/auth/login - Вход в систему
-- POST /api/auth/logout - Выход из системы
-- GET /api/auth/me - Информация о текущем пользователе
+### Authentication
+- POST /auth/login - Вход в систему
+- POST /auth/logout - Выход из системы
+- GET /auth/me - Информация о текущем пользователе
 
-### Управление ботами
-- GET /api/bots - Список ботов
-- POST /api/bots - Создание нового бота
-- PATCH /api/bots/:id - Обновление настроек бота
-- DELETE /api/bots/:id - Удаление бота
+### Bots
+- GET /bots - Список ботов
+- POST /bots - Создание нового бота
+- PATCH /bots/:id - Обновление настроек бота
+- DELETE /bots/:id - Удаление бота
 
-### Тикеты
-- GET /api/tickets - Список тикетов
-- POST /api/tickets - Создание тикета
-- GET /api/tickets/:id - Информация о тикете
-- POST /api/tickets/:id/messages - Отправка сообщения в тикет
+### Tickets
+- GET /tickets - Список тикетов
+- POST /tickets - Создание тикета
+- GET /tickets/:id - Информация о тикете
+- POST /tickets/:id/messages - Отправка сообщения в тикет
 
 ### CRM
-- GET /api/crm/users - Список пользователей CRM
-- GET /api/crm/users/:telegramId - Информация о пользователе
-- POST /api/crm/webhook - Webhook для обновлений CRM
+- GET /crm/users - Список пользователей CRM
+- GET /crm/users/:telegramId - Информация о пользователе
+- POST /crm/webhook - Webhook для обновлений CRM
 
-### Биллинг
-- GET /api/billing/plans - Список тарифных планов
-- POST /api/billing/subscribe - Подписка на план
-- GET /api/billing/status - Статус подписки
+### Billing
+- GET /billing/plans - Список тарифных планов
+- POST /billing/subscribe - Подписка на план
+- GET /billing/status - Статус подписки
 
 ## Безопасность
 

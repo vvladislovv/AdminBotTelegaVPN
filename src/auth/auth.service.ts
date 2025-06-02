@@ -17,7 +17,9 @@ export class AuthService {
         private jwtService: JwtService,
     ) {}
 
-    async register(registerUserDto: RegisterUserDto): Promise<ValidateUserResult> {
+    async register(
+        registerUserDto: RegisterUserDto,
+    ): Promise<{ access_token: string; user: ValidateUserResult }> {
         const existingUser = await this.prisma.user.findUnique({
             where: { email: registerUserDto.email },
         });
@@ -38,7 +40,19 @@ export class AuthService {
         });
 
         const { password: _, ...result } = user;
-        return result;
+
+        // Generate access token for the newly registered user
+        const payload = { email: user.email, sub: user.id, role: user.role };
+        const access_token = this.jwtService.sign(payload);
+
+        return {
+            access_token,
+            user: {
+                id: result.id,
+                email: result.email,
+                role: result.role,
+            },
+        };
     }
 
     async validateUser(email: string, password: string): Promise<ValidateUserResult | null> {
@@ -78,5 +92,10 @@ export class AuthService {
         } catch {
             throw new UnauthorizedException();
         }
+    }
+
+    hasToken(request: any): boolean {
+        const authHeader = request.headers.authorization;
+        return !!authHeader && authHeader.startsWith('Bearer ');
     }
 }
