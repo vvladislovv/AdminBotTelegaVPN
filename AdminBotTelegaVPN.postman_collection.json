@@ -3,6 +3,20 @@
         "name": "AdminBotTelegaVPN",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
+    "variable": [
+        {
+            "key": "telegapayBaseUrl",
+            "value": "http://secure.telegapay.link/api/v1",
+            "type": "default",
+            "description": "Base URL for Telegapay API"
+        },
+        {
+            "key": "telegapayApiKey",
+            "value": "YOUR_TELEGA_PAY_API_KEY_HERE",
+            "type": "secret",
+            "description": "API Key for Telegapay (replace with your actual key)"
+        }
+    ],
     "item": [
         {
             "name": "Auth",
@@ -1211,8 +1225,336 @@
                                     }
                                 }
                             ]
+                        },
+                        {
+                            "name": "Promo Codes",
+                            "item": [
+                                {
+                                    "name": "Create Promo Code",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json"
+                                            }
+                                        ],
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"code\": \"SUMMER2025\",\n    \"discount\": 25,\n    \"type\": \"PERCENTAGE\",\n    \"maxUses\": 50,\n    \"expiresAt\": \"2025-12-31T23:59:59Z\",\n    \"isActive\": true\n}"
+                                        },
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/promo-codes",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": ["admin", "promo-codes"]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Get All Promo Codes",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/promo-codes",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": ["admin", "promo-codes"]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Get Promo Code by ID",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/promo-codes/1",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": ["admin", "promo-codes", "1"]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Update Promo Code",
+                                    "request": {
+                                        "method": "PATCH",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json"
+                                            }
+                                        ],
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"discount\": 25,\n    \"maxUses\": 50\n}"
+                                        },
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/promo-codes/1",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": ["admin", "promo-codes", "1"]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Delete Promo Code",
+                                    "request": {
+                                        "method": "DELETE",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/promo-codes/1",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": ["admin", "promo-codes", "1"]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Toggle Promo Code Status",
+                                    "event": [
+                                        {
+                                            "listen": "test",
+                                            "script": {
+                                                "exec": [
+                                                    "var jsonData = pm.response.json();",
+                                                    "console.log('Promo code status changed to:', jsonData.isActive);",
+                                                    "if (jsonData.isActive) {",
+                                                    "    console.log('Promo code is now active');",
+                                                    "} else {",
+                                                    "    console.log('Promo code is now inactive');",
+                                                    "}"
+                                                ],
+                                                "type": "text/javascript"
+                                            }
+                                        }
+                                    ],
+                                    "request": {
+                                        "method": "PATCH",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/promo-codes/1/toggle",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": ["admin", "promo-codes", "1", "toggle"]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Validate Promo Code",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json"
+                                            }
+                                        ],
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"code\": \"SUMMER2025\",\n    \"amount\": 1000\n}"
+                                        },
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/promo-codes/validate",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": ["admin", "promo-codes", "validate"]
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "CRM Management",
+                            "item": [
+                                {
+                                    "name": "Get All CRM Connections",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/crm/connections",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": ["admin", "crm", "connections"]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Get CRM Connection by ID",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/crm/connections/1",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": ["admin", "crm", "connections", "1"]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Delete CRM Connection",
+                                    "request": {
+                                        "method": "DELETE",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/crm/connections/1",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": ["admin", "crm", "connections", "1"]
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Toggle CRM Connection Status",
+                                    "request": {
+                                        "method": "PATCH",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/crm/connections/1/toggle",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": ["admin", "crm", "connections", "1", "toggle"]
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     ]
+                }
+            ]
+        },
+        {
+            "name": "Billing",
+            "item": [
+                {
+                    "name": "Get Subscription Plans",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/billing/plans",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["billing", "plans"]
+                        }
+                    }
+                },
+                {
+                    "name": "Get User Subscriptions",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/billing/subscriptions",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["billing", "subscriptions"]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Telegram Pay Invoice",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"planId\": \"BASIC\",\n    \"promoCode\": \"YOUR_PROMO_CODE_HERE_OR_OMIT_IF_NOT_NEEDED\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/billing/pay",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["billing", "pay"]
+                        }
+                    }
+                },
+                {
+                    "name": "Telegram Pay Webhook",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Telegram-Pay-Signature",
+                                "value": "your_webhook_signature_here",
+                                "description": "Signature for webhook verification"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"event\": \"payment.paid\",\n    \"payment_id\": \"pay_1234567890\",\n    \"order_id\": \"order_123456\",\n    \"amount\": 100000,\n    \"currency\": \"RUB\",\n    \"status\": \"PAID\",\n    \"metadata\": {\n        \"subscription_id\": 1\n    }\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/billing/webhook/telegram-pay",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["billing", "webhook", "telegram-pay"]
+                        }
+                    }
                 }
             ]
         },
@@ -1220,10 +1562,10 @@
             "name": "CRM",
             "item": [
                 {
-                    "name": "Users",
+                    "name": "Connections",
                     "item": [
                         {
-                            "name": "Create User",
+                            "name": "Create CRM Connection",
                             "request": {
                                 "method": "POST",
                                 "header": [
@@ -1238,17 +1580,17 @@
                                 ],
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n    \"name\": \"John Doe\",\n    \"email\": \"john@example.com\",\n    \"phone\": \"+1234567890\",\n    \"telegramId\": \"123456789\",\n    \"telegramUsername\": \"johndoe\",\n    \"notes\": \"VIP client\"\n}"
+                                    "raw": "{\n    \"userId\": 1,\n    \"provider\": \"AMOCRM\",\n    \"accessToken\": \"YOUR_ACCESS_TOKEN\",\n    \"refreshToken\": \"YOUR_REFRESH_TOKEN\",\n    \"expiresAt\": \"2025-12-31T23:59:59Z\",\n    \"domain\": \"https://your-amocrm-subdomain.amocrm.ru\",\n    \"otherData\": {\n        \"clientId\": \"YOUR_CLIENT_ID\",\n        \"clientSecret\": \"YOUR_CLIENT_SECRET\",\n        \"redirectUri\": \"YOUR_REDIRECT_URI\"\n    }\n}"
                                 },
                                 "url": {
-                                    "raw": "{{baseUrl}}/crm/users",
+                                    "raw": "{{baseUrl}}/crm/connections",
                                     "host": ["{{baseUrl}}"],
-                                    "path": ["crm", "users"]
+                                    "path": ["crm", "connections"]
                                 }
                             }
                         },
                         {
-                            "name": "Get User",
+                            "name": "Get All CRM Connections",
                             "request": {
                                 "method": "GET",
                                 "header": [
@@ -1258,14 +1600,31 @@
                                     }
                                 ],
                                 "url": {
-                                    "raw": "{{baseUrl}}/crm/users/1",
+                                    "raw": "{{baseUrl}}/crm/connections",
                                     "host": ["{{baseUrl}}"],
-                                    "path": ["crm", "users", "1"]
+                                    "path": ["crm", "connections"]
                                 }
                             }
                         },
                         {
-                            "name": "Update User",
+                            "name": "Get CRM Connection by ID",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/crm/connections/:id",
+                                    "host": ["{{baseUrl}}"],
+                                    "path": ["crm", "connections", ":id"]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Update CRM Connection",
                             "request": {
                                 "method": "PUT",
                                 "header": [
@@ -1280,17 +1639,17 @@
                                 ],
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n    \"name\": \"John Updated\",\n    \"email\": \"john.updated@example.com\",\n    \"status\": \"active\"\n}"
+                                    "raw": "{\n    \"accessToken\": \"NEW_ACCESS_TOKEN\",\n    \"expiresAt\": \"2026-12-31T23:59:59Z\"\n}"
                                 },
                                 "url": {
-                                    "raw": "{{baseUrl}}/crm/users/1",
+                                    "raw": "{{baseUrl}}/crm/connections/:id",
                                     "host": ["{{baseUrl}}"],
-                                    "path": ["crm", "users", "1"]
+                                    "path": ["crm", "connections", ":id"]
                                 }
                             }
                         },
                         {
-                            "name": "Delete User",
+                            "name": "Delete CRM Connection",
                             "request": {
                                 "method": "DELETE",
                                 "header": [
@@ -1300,302 +1659,110 @@
                                     }
                                 ],
                                 "url": {
-                                    "raw": "{{baseUrl}}/crm/users/1",
+                                    "raw": "{{baseUrl}}/crm/connections/:id",
                                     "host": ["{{baseUrl}}"],
-                                    "path": ["crm", "users", "1"]
+                                    "path": ["crm", "connections", ":id"]
                                 }
                             }
                         }
                     ]
+                }
+            ]
+        },
+        {
+            "name": "Telegapay Payouts",
+            "description": "Requests for Telegapay.pro Payout API (https://app.telegapay.pro/api/docs/#/Payouts)",
+            "item": [
+                {
+                    "name": "Create Payout (Telegapay.pro)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{telegapayApiKey}}",
+                                "description": "Your Telegapay.pro API Key"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"amount\": 100.50,\"currency\": \"RUB\",\"payment_system\": \"card_rub\",\"wallet\": \"41001XXXXXXXXXXXX\",\"description\": \"Payout for order #123\",\"order_id\": \"YOUR_UNIQUE_ORDER_ID_FOR_PAYOUT\",\"webhook_url\": \"{{yourWebhookEndpointForPayouts}}\"}"
+                        },
+                        "url": {
+                            "raw": "{{telegapayBaseUrl}}/create_payout",
+                            "host": [
+                                "{{telegapayBaseUrl}}"
+                            ],
+                            "path": [
+                                "create_payout"
+                            ]
+                        }
+                    },
+                    "response": []
                 },
                 {
-                    "name": "Subscriptions",
-                    "item": [
-                        {
-                            "name": "Create Subscription",
-                            "request": {
-                                "method": "POST",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{token}}"
-                                    },
-                                    {
-                                        "key": "Content-Type",
-                                        "value": "application/json"
-                                    }
-                                ],
-                                "body": {
-                                    "mode": "raw",
-                                    "raw": "{\n    \"userId\": \"1\",\n    \"planId\": \"premium\",\n    \"autoRenew\": true,\n    \"paymentMethod\": \"card\"\n}"
-                                },
-                                "url": {
-                                    "raw": "{{baseUrl}}/crm/subscriptions",
-                                    "host": ["{{baseUrl}}"],
-                                    "path": ["crm", "subscriptions"]
-                                }
+                    "name": "Cancel Payout (Telegapay.pro)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{telegapayApiKey}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
                             }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"payout_id\": \"YOUR_PAYOUT_ID_FROM_CREATE_PAYOUT\"}"
                         },
-                        {
-                            "name": "Get Subscription",
-                            "request": {
-                                "method": "GET",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{token}}"
-                                    }
-                                ],
-                                "url": {
-                                    "raw": "{{baseUrl}}/crm/subscriptions/1",
-                                    "host": ["{{baseUrl}}"],
-                                    "path": ["crm", "subscriptions", "1"]
-                                }
-                            }
-                        },
-                        {
-                            "name": "Update Subscription",
-                            "request": {
-                                "method": "PUT",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{token}}"
-                                    },
-                                    {
-                                        "key": "Content-Type",
-                                        "value": "application/json"
-                                    }
-                                ],
-                                "body": {
-                                    "mode": "raw",
-                                    "raw": "{\n    \"autoRenew\": false,\n    \"paymentMethod\": \"crypto\"\n}"
-                                },
-                                "url": {
-                                    "raw": "{{baseUrl}}/crm/subscriptions/1",
-                                    "host": ["{{baseUrl}}"],
-                                    "path": ["crm", "subscriptions", "1"]
-                                }
-                            }
-                        },
-                        {
-                            "name": "Cancel Subscription",
-                            "request": {
-                                "method": "DELETE",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{token}}"
-                                    }
-                                ],
-                                "url": {
-                                    "raw": "{{baseUrl}}/crm/subscriptions/1",
-                                    "host": ["{{baseUrl}}"],
-                                    "path": ["crm", "subscriptions", "1"]
-                                }
-                            }
+                        "url": {
+                            "raw": "{{telegapayBaseUrl}}/cancel_payout",
+                            "host": [
+                                "{{telegapayBaseUrl}}"
+                            ],
+                            "path": [
+                                "cancel_payout"
+                            ]
                         }
-                    ]
+                    },
+                    "response": []
                 },
                 {
-                    "name": "Payments",
-                    "item": [
-                        {
-                            "name": "Create Payment",
-                            "request": {
-                                "method": "POST",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{token}}"
-                                    },
-                                    {
-                                        "key": "Content-Type",
-                                        "value": "application/json"
-                                    }
-                                ],
-                                "body": {
-                                    "mode": "raw",
-                                    "raw": "{\n    \"userId\": \"1\",\n    \"amount\": 10.99,\n    \"currency\": \"USD\",\n    \"description\": \"Monthly subscription\",\n    \"paymentMethod\": \"card\",\n    \"metadata\": {\n        \"subscriptionId\": \"1\"\n    }\n}"
-                                },
-                                "url": {
-                                    "raw": "{{baseUrl}}/crm/payments",
-                                    "host": ["{{baseUrl}}"],
-                                    "path": ["crm", "payments"]
-                                }
+                    "name": "Check Payout Status (Telegapay.pro)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{telegapayApiKey}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
                             }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"payout_id\": \"PAYOUT_ID_RETURNED_FROM_CREATE_PAYOUT\"}"
                         },
-                        {
-                            "name": "Get Payment",
-                            "request": {
-                                "method": "GET",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{token}}"
-                                    }
-                                ],
-                                "url": {
-                                    "raw": "{{baseUrl}}/crm/payments/1",
-                                    "host": ["{{baseUrl}}"],
-                                    "path": ["crm", "payments", "1"]
-                                }
-                            }
-                        },
-                        {
-                            "name": "Refund Payment",
-                            "request": {
-                                "method": "POST",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{token}}"
-                                    },
-                                    {
-                                        "key": "Content-Type",
-                                        "value": "application/json"
-                                    }
-                                ],
-                                "body": {
-                                    "mode": "raw",
-                                    "raw": "{\n    \"amount\": 5.99\n}"
-                                },
-                                "url": {
-                                    "raw": "{{baseUrl}}/crm/payments/1/refund",
-                                    "host": ["{{baseUrl}}"],
-                                    "path": ["crm", "payments", "1", "refund"]
-                                }
-                            }
+                        "url": {
+                            "raw": "{{telegapayBaseUrl}}/check_status",
+                            "host": [
+                                "{{telegapayBaseUrl}}"
+                            ],
+                            "path": [
+                                "check_status"
+                            ]
                         }
-                    ]
-                },
-                {
-                    "name": "Servers",
-                    "item": [
-                        {
-                            "name": "Get All Servers",
-                            "request": {
-                                "method": "GET",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{token}}"
-                                    }
-                                ],
-                                "url": {
-                                    "raw": "{{baseUrl}}/crm/servers",
-                                    "host": ["{{baseUrl}}"],
-                                    "path": ["crm", "servers"]
-                                }
-                            }
-                        },
-                        {
-                            "name": "Get Server",
-                            "request": {
-                                "method": "GET",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{token}}"
-                                    }
-                                ],
-                                "url": {
-                                    "raw": "{{baseUrl}}/crm/servers/1",
-                                    "host": ["{{baseUrl}}"],
-                                    "path": ["crm", "servers", "1"]
-                                }
-                            }
-                        },
-                        {
-                            "name": "Update Server Status",
-                            "request": {
-                                "method": "PUT",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{token}}"
-                                    },
-                                    {
-                                        "key": "Content-Type",
-                                        "value": "application/json"
-                                    }
-                                ],
-                                "body": {
-                                    "mode": "raw",
-                                    "raw": "{\n    \"status\": \"maintenance\"\n}"
-                                },
-                                "url": {
-                                    "raw": "{{baseUrl}}/crm/servers/1/status",
-                                    "host": ["{{baseUrl}}"],
-                                    "path": ["crm", "servers", "1", "status"]
-                                }
-                            }
-                        }
-                    ]
-                },
-                {
-                    "name": "Configs",
-                    "item": [
-                        {
-                            "name": "Generate Config",
-                            "request": {
-                                "method": "POST",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{token}}"
-                                    },
-                                    {
-                                        "key": "Content-Type",
-                                        "value": "application/json"
-                                    }
-                                ],
-                                "body": {
-                                    "mode": "raw",
-                                    "raw": "{\n    \"userId\": \"1\",\n    \"serverId\": \"1\"\n}"
-                                },
-                                "url": {
-                                    "raw": "{{baseUrl}}/crm/configs",
-                                    "host": ["{{baseUrl}}"],
-                                    "path": ["crm", "configs"]
-                                }
-                            }
-                        },
-                        {
-                            "name": "Get Config",
-                            "request": {
-                                "method": "GET",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{token}}"
-                                    }
-                                ],
-                                "url": {
-                                    "raw": "{{baseUrl}}/crm/configs/1",
-                                    "host": ["{{baseUrl}}"],
-                                    "path": ["crm", "configs", "1"]
-                                }
-                            }
-                        },
-                        {
-                            "name": "Revoke Config",
-                            "request": {
-                                "method": "DELETE",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{token}}"
-                                    }
-                                ],
-                                "url": {
-                                    "raw": "{{baseUrl}}/crm/configs/1",
-                                    "host": ["{{baseUrl}}"],
-                                    "path": ["crm", "configs", "1"]
-                                }
-                            }
-                        }
-                    ]
+                    },
+                    "response": []
                 }
             ]
         }

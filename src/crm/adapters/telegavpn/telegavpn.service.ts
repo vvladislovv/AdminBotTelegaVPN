@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import axios, { AxiosError, AxiosInstance } from 'axios';
+import { CrmConnection } from '@prisma/client';
+import axios, { AxiosInstance } from 'axios';
+import { CreateUserDto } from './../../dto/create-user.dto';
+import { UpdateUserDto } from './../../dto/update-user.dto';
 import { ITelegaVpnService } from './interfaces/telegavpn-service.interface';
 
 @Injectable()
@@ -34,52 +37,75 @@ export class TelegaVpnService implements ITelegaVpnService {
     }
 
     // Методы для работы с пользователями
-    async createUser(userData: any): Promise<string> {
+    async createContact(data: CreateUserDto, connection: CrmConnection): Promise<any> {
         try {
-            const response = await this.client.post('/users', userData);
-            return response.data.id;
-        } catch (error: any) {
-            this.logger.error(`Failed to create user in TelegaVPN: ${error.message}`);
-            throw error;
-        }
-    }
-
-    async getUserInfo(userId: string): Promise<any> {
-        try {
-            const response = await this.client.get(`/users/${userId}`);
+            this.logger.log('TelegaVpnService: createContact');
+            const response = await this.client.post('/users', data);
+            // Assuming the response contains the created contact object
             return response.data;
         } catch (error: any) {
-            this.logger.error(`Failed to get user info from TelegaVPN: ${error.message}`);
+            this.logger.error(`Failed to create contact in TelegaVPN: ${error.message}`);
             throw error;
         }
     }
 
-    async updateUser(userId: string, updateData: any): Promise<void> {
+    async getContactInfo(id: string, connection: CrmConnection): Promise<any> {
         try {
-            await this.client.patch(`/users/${userId}`, updateData);
+            this.logger.log(`TelegaVpnService: getContactInfo for ID: ${id}`);
+            const response = await this.client.get(`/users/${id}`);
+            return response.data;
         } catch (error: any) {
-            this.logger.error(`Failed to update user in TelegaVPN: ${error.message}`);
+            this.logger.error(`Failed to get contact info from TelegaVPN: ${error.message}`);
+            throw error;
+        }
+    }
+
+    async updateContact(id: string, data: UpdateUserDto, connection: CrmConnection): Promise<any> {
+        try {
+            this.logger.log(`TelegaVpnService: updateContact for ID: ${id}`);
+            const response = await this.client.patch(`/users/${id}`, data);
+            // Assuming the response contains the updated contact object
+            return response.data;
+        } catch (error: any) {
+            this.logger.error(`Failed to update contact in TelegaVPN: ${error.message}`);
+            throw error;
+        }
+    }
+
+    async deleteContact(id: string, connection: CrmConnection): Promise<void> {
+        try {
+            this.logger.log(`TelegaVpnService: deleteContact for ID: ${id}`);
+            await this.client.delete(`/users/${id}`);
+        } catch (error: any) {
+            this.logger.error(`Failed to delete contact in TelegaVPN: ${error.message}`);
             throw error;
         }
     }
 
     // Методы для работы с подписками
-    async createSubscription(userId: string, planId: string): Promise<string> {
+    async createSubscription(
+        userId: string,
+        planId: string,
+        connection: CrmConnection,
+    ): Promise<any> {
         try {
+            this.logger.log(`TelegaVpnService: createSubscription for User ID: ${userId}`);
             const response = await this.client.post('/subscriptions', {
                 userId,
                 planId,
             });
-            return response.data.id;
+            // Assuming the response contains the created subscription object
+            return response.data;
         } catch (error: any) {
             this.logger.error(`Failed to create subscription in TelegaVPN: ${error.message}`);
             throw error;
         }
     }
 
-    async getSubscriptionInfo(subscriptionId: string): Promise<any> {
+    async getSubscriptionInfo(id: string, connection: CrmConnection): Promise<any> {
         try {
-            const response = await this.client.get(`/subscriptions/${subscriptionId}`);
+            this.logger.log(`TelegaVpnService: getSubscriptionInfo for ID: ${id}`);
+            const response = await this.client.get(`/subscriptions/${id}`);
             return response.data;
         } catch (error: any) {
             this.logger.error(`Failed to get subscription info from TelegaVPN: ${error.message}`);
@@ -87,33 +113,56 @@ export class TelegaVpnService implements ITelegaVpnService {
         }
     }
 
-    async updateSubscription(subscriptionId: string, updateData: any): Promise<void> {
+    async updateSubscription(id: string, data: any, connection: CrmConnection): Promise<any> {
         try {
-            await this.client.patch(`/subscriptions/${subscriptionId}`, updateData);
+            this.logger.log(`TelegaVpnService: updateSubscription for ID: ${id}`);
+            const response = await this.client.patch(`/subscriptions/${id}`, data);
+            // Assuming the response contains the updated subscription object
+            return response.data;
         } catch (error: any) {
             this.logger.error(`Failed to update subscription in TelegaVPN: ${error.message}`);
             throw error;
         }
     }
 
-    // Методы для работы с платежами
-    async createPayment(userId: string, amount: number, currency: string): Promise<string> {
+    async cancelSubscription(id: string, connection: CrmConnection): Promise<any> {
         try {
+            this.logger.log(`TelegaVpnService: cancelSubscription for ID: ${id}`);
+            const response = await this.client.patch(`/subscriptions/${id}/cancel`); // Assuming there is a cancel endpoint
+            // Assuming the response contains the cancelled subscription object
+            return response.data;
+        } catch (error: any) {
+            this.logger.error(`Failed to cancel subscription in TelegaVPN: ${error.message}`);
+            throw error;
+        }
+    }
+
+    // Методы для работы с платежами
+    async createPayment(
+        userId: string,
+        amount: number,
+        currency: string,
+        connection: CrmConnection,
+    ): Promise<any> {
+        try {
+            this.logger.log(`TelegaVpnService: createPayment for User ID: ${userId}`);
             const response = await this.client.post('/payments', {
                 userId,
                 amount,
                 currency,
             });
-            return response.data.id;
+            // Assuming the response contains the created payment object
+            return response.data;
         } catch (error: any) {
             this.logger.error(`Failed to create payment in TelegaVPN: ${error.message}`);
             throw error;
         }
     }
 
-    async getPaymentInfo(paymentId: string): Promise<any> {
+    async getPaymentInfo(id: string, connection: CrmConnection): Promise<any> {
         try {
-            const response = await this.client.get(`/payments/${paymentId}`);
+            this.logger.log(`TelegaVpnService: getPaymentInfo for ID: ${id}`);
+            const response = await this.client.get(`/payments/${id}`);
             return response.data;
         } catch (error: any) {
             this.logger.error(`Failed to get payment info from TelegaVPN: ${error.message}`);
@@ -121,9 +170,22 @@ export class TelegaVpnService implements ITelegaVpnService {
         }
     }
 
-    // Методы для работы с серверами
-    async getServers(): Promise<any[]> {
+    async refundPayment(id: string, connection: CrmConnection, amount?: number): Promise<any> {
         try {
+            this.logger.log(`TelegaVpnService: refundPayment for ID: ${id}`);
+            const response = await this.client.post(`/payments/${id}/refund`, { amount }); // Assuming there is a refund endpoint
+            // Assuming the response contains the refunded payment object
+            return response.data;
+        } catch (error: any) {
+            this.logger.error(`Failed to refund payment in TelegaVPN: ${error.message}`);
+            throw error;
+        }
+    }
+
+    // Методы для работы с серверами
+    async getServers(connection: CrmConnection): Promise<any[]> {
+        try {
+            this.logger.log('TelegaVpnService: getServers');
             const response = await this.client.get('/servers');
             return response.data;
         } catch (error: any) {
@@ -132,9 +194,10 @@ export class TelegaVpnService implements ITelegaVpnService {
         }
     }
 
-    async getServerInfo(serverId: string): Promise<any> {
+    async getServerInfo(id: string, connection: CrmConnection): Promise<any> {
         try {
-            const response = await this.client.get(`/servers/${serverId}`);
+            this.logger.log(`TelegaVpnService: getServerInfo for ID: ${id}`);
+            const response = await this.client.get(`/servers/${id}`);
             return response.data;
         } catch (error: any) {
             this.logger.error(`Failed to get server info from TelegaVPN: ${error.message}`);
@@ -142,31 +205,42 @@ export class TelegaVpnService implements ITelegaVpnService {
         }
     }
 
-    // Методы для работы с конфигурациями
-    async generateConfig(userId: string, serverId: string): Promise<string> {
+    async updateServerStatus(id: string, status: string, connection: CrmConnection): Promise<any> {
         try {
-            if (this.isDevelopment) {
-                this.logger.debug('Development mode: Mocking config generation', {
-                    serverId,
-                    userId,
-                });
-                return `test-config-${Date.now()}`;
-            }
+            this.logger.log(`TelegaVpnService: updateServerStatus for ID: ${id}`);
+            const response = await this.client.patch(`/servers/${id}/status`, { status }); // Assuming there is a status update endpoint
+            // Assuming the response contains the updated server object
+            return response.data;
+        } catch (error: any) {
+            this.logger.error(`Failed to update server status in TelegaVPN: ${error.message}`);
+            throw error;
+        }
+    }
 
+    // Методы для работы с конфигурациями
+    async generateConfig(
+        userId: string,
+        serverId: string,
+        connection: CrmConnection,
+    ): Promise<any> {
+        try {
+            this.logger.log(`TelegaVpnService: generateConfig for User ID: ${userId}`);
             const response = await this.client.post('/configs', {
                 userId,
                 serverId,
             });
-            return response.data.config;
+            // Assuming the response contains the generated config object
+            return response.data;
         } catch (error: any) {
             this.logger.error(`Failed to generate config in TelegaVPN: ${error.message}`);
             throw error;
         }
     }
 
-    async getConfigInfo(configId: string): Promise<any> {
+    async getConfigInfo(id: string, connection: CrmConnection): Promise<any> {
         try {
-            const response = await this.client.get(`/configs/${configId}`);
+            this.logger.log(`TelegaVpnService: getConfigInfo for ID: ${id}`);
+            const response = await this.client.get(`/configs/${id}`);
             return response.data;
         } catch (error: any) {
             this.logger.error(`Failed to get config info from TelegaVPN: ${error.message}`);
@@ -174,71 +248,36 @@ export class TelegaVpnService implements ITelegaVpnService {
         }
     }
 
-    async createServer(data: any) {
+    async revokeConfig(id: string, connection: CrmConnection): Promise<any> {
         try {
-            if (this.isDevelopment) {
-                this.logger.debug('Development mode: Mocking server creation', data);
-                return {
-                    id: `test-server-${Date.now()}`,
-                    ...data,
-                    status: 'active',
-                };
-            }
-
-            const response = await this.client.post('/servers', data);
+            this.logger.log(`TelegaVpnService: revokeConfig for ID: ${id}`);
+            const response = await this.client.patch(`/configs/${id}/revoke`); // Assuming there is a revoke endpoint
+            // Assuming the response contains the revoked config object
             return response.data;
-        } catch (error) {
-            if (error instanceof AxiosError) {
-                this.logger.error(`Failed to create server: ${error.message}`);
-            } else {
-                this.logger.error('Failed to create server: Unknown error');
-            }
+        } catch (error: any) {
+            this.logger.error(`Failed to revoke config in TelegaVPN: ${error.message}`);
             throw error;
         }
     }
 
-    async getServerStatus(serverId: string) {
-        try {
-            if (this.isDevelopment) {
-                this.logger.debug('Development mode: Mocking server status check', { serverId });
-                return {
-                    status: 'active',
-                    uptime: '99.9%',
-                    load: '25%',
-                };
-            }
+    async getAllUserDataFromCrm(userId: string, connection: CrmConnection): Promise<any> {
+        this.logger.log(`TelegaVpnService: getAllUserDataFromCrm for User ID: ${userId}`);
+        let userData: any = {};
 
-            const response = await this.client.get(`/servers/${serverId}/status`);
-            return response.data;
-        } catch (error) {
-            if (error instanceof AxiosError) {
-                this.logger.error(`Failed to get server status: ${error.message}`);
-            } else {
-                this.logger.error('Failed to get server status: Unknown error');
-            }
-            throw error;
+        try {
+            // Assuming TelegaVPN API has an endpoint to get all user data by user ID
+            // Or you might need to call multiple endpoints here to gather data
+            const response = await this.client.get(`/users/${userId}/all-data`);
+            userData = response.data;
+        } catch (error: any) {
+            this.logger.error(`Failed to get all user data from TelegaVPN: ${error.message}`);
+            // Depending on requirements, you might want to throw or return partial data
+            throw error; // Throwing for now as per typical error handling
         }
+
+        return userData;
     }
 
-    async revokeConfig(configId: string) {
-        try {
-            if (this.isDevelopment) {
-                this.logger.debug('Development mode: Mocking config revocation', { configId });
-                return {
-                    success: true,
-                    configId,
-                };
-            }
-
-            const response = await this.client.delete(`/configs/${configId}`);
-            return response.data;
-        } catch (error) {
-            if (error instanceof AxiosError) {
-                this.logger.error(`Failed to revoke config: ${error.message}`);
-            } else {
-                this.logger.error('Failed to revoke config: Unknown error');
-            }
-            throw error;
-        }
-    }
+    // Removed methods not defined in ITelegaVpnService
+    // createServer, getServerStatus
 }

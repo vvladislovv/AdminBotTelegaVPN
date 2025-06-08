@@ -1,110 +1,159 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, Logger } from '@nestjs/common';
+import { CrmConnection, CrmProvider } from '@prisma/client';
 import { AmocrmService } from './adapters/amocrm/amocrm.service';
-import { ITelegaVpnService } from './adapters/telegavpn/interfaces/telegavpn-service.interface';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { ICrmService } from './interfaces/crm-service.interface';
+import { Bitrix24Service } from './adapters/bitrix24/bitrix24.service';
 
 @Injectable()
 export class CrmService {
     private readonly logger = new Logger(CrmService.name);
-    private crmProvider: string;
 
     constructor(
-        private readonly configService: ConfigService,
-        @Inject('CRM_SERVICE')
-        private readonly crmService: ICrmService,
-        @Inject('TELEGAVPN_SERVICE') private readonly telegavpnService: ITelegaVpnService,
         private readonly amocrmService: AmocrmService,
-    ) {
-        this.crmProvider = this.configService.get<string>('CRM_PROVIDER', 'amocrm');
-    }
+        private readonly bitrix24Service: Bitrix24Service,
+    ) {}
 
-    private getActiveService(): ICrmService | ITelegaVpnService {
-        switch (this.crmProvider.toLowerCase()) {
-            case 'amocrm':
-                return this.crmService;
-            case 'telegavpn':
-                return this.telegavpnService;
+    private getAdapter(connection: CrmConnection) {
+        switch (connection.provider) {
+            case CrmProvider.AMOCRM:
+                return this.amocrmService;
+            case CrmProvider.BITRIX24:
+                return this.bitrix24Service;
+            case CrmProvider.TELEGA_VPN:
+                this.logger.warn('TelegaVPN provider not implemented yet');
+                return null;
             default:
-                this.logger.warn(
-                    `Unknown CRM provider: ${this.crmProvider}, using AmoCRM as default`,
-                );
-                return this.crmService;
+                this.logger.warn(`Unknown CRM provider in connection: ${connection.provider}`);
+                return null;
         }
     }
 
-    // User/Contact methods
-    async createUser(createUserDto: CreateUserDto) {
-        return this.amocrmService.createContact(createUserDto);
+    async getContactInfo(connection: CrmConnection, contactId: string) {
+        const adapter = this.getAdapter(connection);
+        if (!adapter) {
+            throw new Error(`No CRM adapter found for provider: ${connection.provider}`);
+        }
+
+        try {
+            return await adapter.getContactInfo(connection, contactId);
+        } catch (error: any) {
+            this.logger.error(
+                `Failed to get contact info from ${connection.provider}: ${error.message}`,
+                error.stack,
+            );
+            throw error;
+        }
     }
 
-    async getUser(id: string) {
-        return this.amocrmService.getContactInfo(id);
+    async getRelatedData(connection: CrmConnection, entityId: string, entityType: string) {
+        const adapter = this.getAdapter(connection);
+        if (!adapter) {
+            throw new Error(`No CRM adapter found for provider: ${connection.provider}`);
+        }
+
+        try {
+            return await adapter.getRelatedData(connection, entityId, entityType);
+        } catch (error: any) {
+            this.logger.error(
+                `Failed to get related data from ${connection.provider}: ${error.message}`,
+                error.stack,
+            );
+            throw error;
+        }
     }
 
-    async updateUser(id: string, updateUserDto: UpdateUserDto) {
-        return this.amocrmService.updateContact(id, updateUserDto);
+    async createContact(connection: CrmConnection, data: any) {
+        const adapter = this.getAdapter(connection);
+        if (!adapter) {
+            throw new Error(`No CRM adapter found for provider: ${connection.provider}`);
+        }
+        return await adapter.createContact(connection, data);
     }
 
-    async deleteUser(id: string) {
-        return this.amocrmService.deleteContact(id);
+    async updateContact(connection: CrmConnection, contactId: string, data: any) {
+        const adapter = this.getAdapter(connection);
+        if (!adapter) {
+            throw new Error(`No CRM adapter found for provider: ${connection.provider}`);
+        }
+        return await adapter.updateContact(connection, contactId, data);
     }
 
-    // Subscription methods
-    async createSubscription(userId: string, planId: string) {
-        return this.crmService.createSubscription(userId, planId);
+    async createDeal(connection: CrmConnection, data: any) {
+        const adapter = this.getAdapter(connection);
+        if (!adapter) {
+            throw new Error(`No CRM adapter found for provider: ${connection.provider}`);
+        }
+        return await adapter.createDeal(connection, data);
     }
 
-    async getSubscriptionInfo(id: string) {
-        return this.crmService.getSubscriptionInfo(id);
+    async updateDeal(connection: CrmConnection, dealId: string, data: any) {
+        const adapter = this.getAdapter(connection);
+        if (!adapter) {
+            throw new Error(`No CRM adapter found for provider: ${connection.provider}`);
+        }
+        return await adapter.updateDeal(connection, dealId, data);
     }
 
-    async updateSubscription(id: string, data: any) {
-        return this.crmService.updateSubscription(id, data);
+    async createTask(connection: CrmConnection, data: any) {
+        const adapter = this.getAdapter(connection);
+        if (!adapter) {
+            throw new Error(`No CRM adapter found for provider: ${connection.provider}`);
+        }
+        return await adapter.createTask(connection, data);
     }
 
-    async cancelSubscription(id: string) {
-        return this.crmService.cancelSubscription(id);
+    async updateTask(connection: CrmConnection, taskId: string, data: any) {
+        const adapter = this.getAdapter(connection);
+        if (!adapter) {
+            throw new Error(`No CRM adapter found for provider: ${connection.provider}`);
+        }
+        return await adapter.updateTask(connection, taskId, data);
     }
 
-    // Payment methods
-    async createPayment(userId: string, amount: number, currency: string) {
-        return this.crmService.createPayment(userId, amount, currency);
+    async createNote(connection: CrmConnection, data: any) {
+        const adapter = this.getAdapter(connection);
+        if (!adapter) {
+            throw new Error(`No CRM adapter found for provider: ${connection.provider}`);
+        }
+        return await adapter.createNote(connection, data);
     }
 
-    async getPaymentInfo(id: string) {
-        return this.crmService.getPaymentInfo(id);
+    async updateNote(connection: CrmConnection, noteId: string, data: any) {
+        const adapter = this.getAdapter(connection);
+        if (!adapter) {
+            throw new Error(`No CRM adapter found for provider: ${connection.provider}`);
+        }
+        return await adapter.updateNote(connection, noteId, data);
     }
 
-    async refundPayment(id: string, amount?: number) {
-        return this.crmService.refundPayment(id, amount);
+    async createCompany(connection: CrmConnection, data: any) {
+        const adapter = this.getAdapter(connection);
+        if (!adapter) {
+            throw new Error(`No CRM adapter found for provider: ${connection.provider}`);
+        }
+        return await adapter.createCompany(connection, data);
     }
 
-    // Server methods
-    async getServers() {
-        return this.crmService.getServers();
+    async updateCompany(connection: CrmConnection, companyId: string, data: any) {
+        const adapter = this.getAdapter(connection);
+        if (!adapter) {
+            throw new Error(`No CRM adapter found for provider: ${connection.provider}`);
+        }
+        return await adapter.updateCompany(connection, companyId, data);
     }
 
-    async getServerInfo(id: string) {
-        return this.crmService.getServerInfo(id);
+    async createLead(connection: CrmConnection, data: any) {
+        const adapter = this.getAdapter(connection);
+        if (!adapter) {
+            throw new Error(`No CRM adapter found for provider: ${connection.provider}`);
+        }
+        return await adapter.createLead(connection, data);
     }
 
-    async updateServerStatus(id: string, status: string) {
-        return this.crmService.updateServerStatus(id, status);
-    }
-
-    // Config methods
-    async generateConfig(userId: string, serverId: string) {
-        return this.crmService.generateConfig(userId, serverId);
-    }
-
-    async getConfigInfo(id: string) {
-        return this.crmService.getConfigInfo(id);
-    }
-
-    async revokeConfig(id: string) {
-        return this.crmService.revokeConfig(id);
+    async updateLead(connection: CrmConnection, leadId: string, data: any) {
+        const adapter = this.getAdapter(connection);
+        if (!adapter) {
+            throw new Error(`No CRM adapter found for provider: ${connection.provider}`);
+        }
+        return await adapter.updateLead(connection, leadId, data);
     }
 }

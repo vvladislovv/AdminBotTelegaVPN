@@ -31,26 +31,69 @@ enum SubscriptionStatus {
   PAID
   EXPIRED
   CANCELLED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  EXPIRED
+}
+
+enum PaymentMethod {
+  TELEGRAM_PAY
+  BANK_CARD
+  CRYPTO
+  OTHER
+}
+
+model Payment {
+  id           String         @id @default(uuid())
+  userId       Int
+  user         User           @relation(fields: [userId], references: [id])
+  amount       Float
+  currency     String         @default("RUB")
+  status       PaymentStatus  @default(PENDING)
+  method       PaymentMethod
+  externalId   String?        // External payment ID from payment provider
+  orderId      String?        // Our internal order ID
+  description  String?
+  metadata     String?        // Store any additional payment data as JSON string
+  subscription Subscription[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+enum CrmProvider {
+  AMOCRM
+  BITRIX24
+  TELEGA_VPN // If TelegaVPN acts as a CRM source
 }
 
 model User {
-  id            Int            @id @default(autoincrement())
-  email         String         @unique
-  password      String
-  name          String?
-  role          String         @default("USER")
-  telegramId    String?        @unique
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  bots          Bot[]
-  tickets       Ticket[]
-  subscriptions Subscription[]
-  referralCode  String?        @unique
-  referredBy    Int?
-  referrer      User?          @relation("UserReferrals", fields: [referredBy], references: [id])
-  referrals     User[]         @relation("UserReferrals")
-  referralLinks ReferralLink[]
-  referralStats ReferralStats?
+  id                Int             @id @default(autoincrement())
+  email             String          @unique
+  password          String
+  name              String?
+  role              String          @default("USER")
+  telegramId        String?         @unique
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  bots              Bot[]
+  tickets           Ticket[]
+  subscriptions     Subscription[]
+  referralCode      String?         @unique
+  referredBy        Int?
+  referrer          User?           @relation("UserReferrals", fields: [referredBy], references: [id])
+  referrals         User[]          @relation("UserReferrals")
+  referralLinks     ReferralLink[]
+  referralStats     ReferralStats?
+  crmConnections    CrmConnection[]
+  createdPromoCodes PromoCode[]
+  payments          Payment[]
 }
 
 model Bot {
@@ -106,18 +149,26 @@ model CrmUser {
 }
 
 model Subscription {
-  id        Int                @id @default(autoincrement())
-  userId    Int
-  user      User               @relation(fields: [userId], references: [id])
-  botId     Int
-  bot       Bot                @relation(fields: [botId], references: [id])
-  plan      SubscriptionPlan
-  status    SubscriptionStatus @default(PENDING)
-  amount    Float
-  invoiceId String
-  expiresAt DateTime?
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
+  id           Int                @id @default(autoincrement())
+  userId       Int
+  user         User               @relation(fields: [userId], references: [id])
+  botId        Int
+  bot          Bot                @relation(fields: [botId], references: [id])
+  plan         SubscriptionPlan
+  status       SubscriptionStatus @default(PENDING)
+  amount       Float
+  paymentId    String?
+  payment      Payment?           @relation(fields: [paymentId], references: [id])
+  periodStart  DateTime?          // When the subscription period starts
+  periodEnd    DateTime?          // When the subscription period ends
+  isRecurring  Boolean            @default(false) // For future use
+  metadata     String?            // Store any additional subscription data as JSON string
+  invoiceId    String?
+  externalId   String?            // External subscription ID from payment provider
+  cancelledAt  DateTime?
+  cancelledBy  Int?               // User ID who cancelled the subscription
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
 }
 
 model ReferralLink {
@@ -142,4 +193,34 @@ model ReferralStats {
   lastBonusDate   DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+}
+
+model CrmConnection {
+  id           Int         @id @default(autoincrement())
+  userId       Int         @unique // One connection per user for now
+  user         User        @relation(fields: [userId], references: [id])
+  provider     CrmProvider
+  accessToken  String
+  refreshToken String?
+  expiresAt    DateTime?
+  domain       String?
+  otherData    String? // Changed from Json? to String? to store encrypted data
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  isActive     Boolean     @default(true)
+}
+
+model PromoCode {
+  id        Int       @id @default(autoincrement())
+  code      String    @unique
+  discount  Float // Discount amount or percentage
+  type      String // "PERCENTAGE" or "FIXED"
+  maxUses   Int? // Maximum number of times the code can be used
+  usedCount Int       @default(0)
+  expiresAt DateTime?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy Int // Admin user ID who created the code
+  creator   User      @relation(fields: [createdBy], references: [id])
 }

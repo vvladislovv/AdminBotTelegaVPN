@@ -64,23 +64,42 @@ export class MeService {
             };
         }
 
-        // Проверяем статус счета в TelegaPay
-        const invoiceStatus = await this.telegaPayService.checkInvoiceStatus(
-            subscription.invoiceId,
-        );
+        // Use the current subscription status as default
+        let newStatus = subscription.status;
+        
+        // Check invoice status in TelegaPay if invoiceId exists
+        if (subscription.invoiceId) {
+          try {
+            const status = await this.telegaPayService.checkInvoiceStatus(
+              subscription.invoiceId
+            );
+            if (status?.status) {
+              // Only update if the status is a valid SubscriptionStatus
+              const validStatuses = [
+                'PENDING', 'PAID', 'EXPIRED', 'FAILED', 'REFUNDED'
+              ] as const;
+              
+              if (validStatuses.includes(status.status as any)) {
+                newStatus = status.status as any;
+              }
+            }
+          } catch (error) {
+            console.error('Error checking invoice status:', error);
+          }
+        }
 
-        // Обновляем статус подписки в базе данных
-        if (invoiceStatus.status !== subscription.status) {
-            await this.prisma.subscription.update({
-                where: { id: subscription.id },
-                data: { status: invoiceStatus.status },
-            });
+        // Update subscription status in the database if it has changed
+        if (newStatus !== subscription.status) {
+          await this.prisma.subscription.update({
+            where: { id: subscription.id },
+            data: { status: newStatus },
+          });
         }
 
         return {
-            status: invoiceStatus.status,
+            status: newStatus,
             plan: subscription.plan,
-            expiresAt: subscription.expiresAt,
+            expiresAt: subscription.periodEnd,
         };
     }
 
@@ -105,7 +124,7 @@ export class MeService {
                     status: sub.status,
                     amount: sub.amount,
                     createdAt: sub.createdAt,
-                    expiresAt: sub.expiresAt,
+                    expiresAt: sub.periodEnd,
                     bot: {
                         id: sub.bot.id,
                         name: sub.bot.name,

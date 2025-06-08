@@ -4,19 +4,25 @@ import {
     Delete,
     Get,
     Param,
+    ParseIntPipe,
     Patch,
     Post,
     Query,
     UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Role, Roles } from '../auth/decorators/roles.decorator';
+import { CrmProvider } from '@prisma/client';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { RegisterUserDto } from '../auth/dto/register-user.dto';
+import { Role } from '../auth/enums/role.enum';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { BotsService } from '../bots/bots.service';
 import { CreateBotDto } from '../bots/dto/create-bot.dto';
 import { UpdateBotDto } from '../bots/dto/update-bot.dto';
+import { CrmConnectionsService } from '../crm/crm-connections.service';
+import { CrmService } from '../crm/crm.service';
+import { CreateCrmConnectionDto } from '../crm/dto/create-crm-connection.dto';
 import { MeService } from '../me/me.service';
 import { CreateTicketDto } from '../tickets/dto/create-ticket.dto';
 import { UpdateTicketDto } from '../tickets/dto/update-ticket.dto';
@@ -28,20 +34,22 @@ import { UpdateClientDto } from './dto/update-client.dto';
 @Controller('admin/clients')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
-@Roles(Role.Admin)
+@Roles(Role.ADMIN)
 export class ClientsController {
     constructor(
         private readonly clientsService: ClientsService,
         private readonly botsService: BotsService,
         private readonly ticketsService: TicketsService,
         private readonly meService: MeService,
+        private readonly crmConnectionsService: CrmConnectionsService,
+        private readonly crmService: CrmService,
     ) {}
 
     @Post()
     @ApiOperation({ summary: 'Создать клиента (Админ)' })
     @ApiResponse({ status: 201, description: 'Клиент успешно создан' })
     @ApiResponse({ status: 400, description: 'Неверные данные' })
-    @ApiResponse({ status: 403, description: 'Доступ запрещен' })
+    @ApiResponse({ status: 409, description: 'Пользователь уже существует' })
     async create(@Body() registerUserDto: RegisterUserDto) {
         return this.clientsService.create(registerUserDto);
     }
@@ -102,7 +110,7 @@ export class ClientsController {
     @ApiResponse({ status: 201, description: 'Бот успешно создан' })
     @ApiResponse({ status: 400, description: 'Неверные данные' })
     @ApiResponse({ status: 403, description: 'Доступ запрещен' })
-    @Roles(Role.Admin)
+    @Roles(Role.ADMIN)
     async createBot(@Param('clientId') clientId: string, @Body() createBotDto: CreateBotDto) {
         // Need to ensure the client exists before creating a bot for them
         await this.clientsService.findOne(+clientId);
@@ -114,7 +122,7 @@ export class ClientsController {
     @ApiResponse({ status: 200, description: 'Информация о боте' })
     @ApiResponse({ status: 403, description: 'Доступ запрещен' })
     @ApiResponse({ status: 404, description: 'Клиент или бот не найден' })
-    @Roles(Role.Admin)
+    @Roles(Role.ADMIN)
     async findOneBot(@Param('clientId') clientId: string, @Param('botId') botId: string) {
         // Need to ensure the bot belongs to the client
         return this.botsService.findOne(+botId, +clientId);
@@ -126,7 +134,7 @@ export class ClientsController {
     @ApiResponse({ status: 400, description: 'Неверные данные' })
     @ApiResponse({ status: 403, description: 'Доступ запрещен' })
     @ApiResponse({ status: 404, description: 'Клиент или бот не найден' })
-    @Roles(Role.Admin)
+    @Roles(Role.ADMIN)
     async updateBot(
         @Param('clientId') clientId: string,
         @Param('botId') botId: string,
@@ -141,7 +149,7 @@ export class ClientsController {
     @ApiResponse({ status: 200, description: 'Бот успешно удален' })
     @ApiResponse({ status: 403, description: 'Доступ запрещен' })
     @ApiResponse({ status: 404, description: 'Клиент или бот не найден' })
-    @Roles(Role.Admin)
+    @Roles(Role.ADMIN)
     async removeBot(@Param('clientId') clientId: string, @Param('botId') botId: string) {
         // Need to ensure the bot belongs to the client
         return this.botsService.remove(+botId, +clientId);
@@ -153,7 +161,7 @@ export class ClientsController {
     @ApiResponse({ status: 200, description: 'Список тикетов' })
     @ApiResponse({ status: 403, description: 'Доступ запрещен' })
     @ApiResponse({ status: 404, description: 'Клиент не найден' })
-    @Roles(Role.Admin)
+    @Roles(Role.ADMIN)
     async findAllTickets(@Param('clientId') clientId: string) {
         // Need to ensure the client exists
         await this.clientsService.findOne(+clientId);
@@ -165,7 +173,7 @@ export class ClientsController {
     @ApiResponse({ status: 200, description: 'Информация о тикете' })
     @ApiResponse({ status: 403, description: 'Доступ запрещен' })
     @ApiResponse({ status: 404, description: 'Клиент или тикет не найден' })
-    @Roles(Role.Admin)
+    @Roles(Role.ADMIN)
     async findOneTicket(@Param('clientId') clientId: string, @Param('ticketId') ticketId: string) {
         // Need to ensure the ticket belongs to the client
         return this.ticketsService.findOne(+ticketId, +clientId);
@@ -177,7 +185,7 @@ export class ClientsController {
     @ApiResponse({ status: 400, description: 'Неверные данные' })
     @ApiResponse({ status: 403, description: 'Доступ запрещен' })
     @ApiResponse({ status: 404, description: 'Клиент или бот не найден' })
-    @Roles(Role.Admin)
+    @Roles(Role.ADMIN)
     async createTicket(
         @Param('clientId') clientId: string,
         @Body() createTicketDto: CreateTicketDto,
@@ -194,7 +202,7 @@ export class ClientsController {
     @ApiResponse({ status: 400, description: 'Неверные данные' })
     @ApiResponse({ status: 403, description: 'Доступ запрещен' })
     @ApiResponse({ status: 404, description: 'Клиент или тикет не найден' })
-    @Roles(Role.Admin)
+    @Roles(Role.ADMIN)
     async updateTicket(
         @Param('clientId') clientId: string,
         @Param('ticketId') ticketId: string,
@@ -209,7 +217,7 @@ export class ClientsController {
     @ApiResponse({ status: 200, description: 'Тикет успешно удален' })
     @ApiResponse({ status: 403, description: 'Доступ запрещен' })
     @ApiResponse({ status: 404, description: 'Клиент или тикет не найден' })
-    @Roles(Role.Admin)
+    @Roles(Role.ADMIN)
     async removeTicket(@Param('clientId') clientId: string, @Param('ticketId') ticketId: string) {
         return this.ticketsService.remove(+ticketId, +clientId);
     }
@@ -221,7 +229,7 @@ export class ClientsController {
     @ApiResponse({ status: 400, description: 'Неверные данные' })
     @ApiResponse({ status: 403, description: 'Доступ запрещен' })
     @ApiResponse({ status: 404, description: 'Клиент или тикет не найден' })
-    @Roles(Role.Admin)
+    @Roles(Role.ADMIN)
     async addMessageToTicket(
         @Param('clientId') clientId: string,
         @Param('ticketId') ticketId: string,
@@ -245,7 +253,7 @@ export class ClientsController {
     @ApiResponse({ status: 200, description: 'Список сообщений' })
     @ApiResponse({ status: 403, description: 'Доступ запрещен' })
     @ApiResponse({ status: 404, description: 'Клиент или тикет не найден' })
-    @Roles(Role.Admin)
+    @Roles(Role.ADMIN)
     async getTicketMessages(
         @Param('clientId') clientId: string,
         @Param('ticketId') ticketId: string,
@@ -323,5 +331,97 @@ export class ClientsController {
         @Param('linkId') linkId: string,
     ) {
         return this.meService.deleteReferralLink(+linkId, +clientId);
+    }
+
+    // Admin CRM Connections Endpoints
+    @Post(':clientId/crm/connections')
+    @ApiOperation({ summary: 'Создать CRM подключение для клиента (Админ)' })
+    @ApiResponse({ status: 201, description: 'Подключение успешно создано' })
+    @ApiResponse({ status: 400, description: 'Неверные данные' })
+    @ApiResponse({ status: 403, description: 'Доступ запрещен' })
+    @ApiResponse({ status: 404, description: 'Клиент не найден' })
+    async createClientCrmConnection(
+        @Param('clientId') clientId: string,
+        @Body() connectionData: CreateCrmConnectionDto,
+    ) {
+        // Optional: Check if client exists
+        await this.clientsService.findOne(+clientId);
+        return this.crmConnectionsService.createConnection({
+            ...connectionData,
+            userId: +clientId,
+        });
+    }
+
+    @Get(':clientId/crm/connections')
+    @ApiOperation({ summary: 'Получить CRM подключение клиента по ID клиента (Админ)' })
+    @ApiResponse({ status: 200, description: 'Информация о подключении' })
+    @ApiResponse({ status: 403, description: 'Доступ запрещен' })
+    @ApiResponse({ status: 404, description: 'Клиент или подключение не найдено' })
+    async getClientCrmConnection(@Param('clientId') clientId: string) {
+        // Optional: Check if client exists
+        await this.clientsService.findOne(+clientId);
+        return this.crmConnectionsService.getConnection(+clientId);
+    }
+
+    @Patch(':clientId/crm/connections/:connectionId')
+    @ApiOperation({ summary: 'Обновить CRM подключение клиента по ID подключения (Админ)' })
+    @ApiResponse({ status: 200, description: 'Подключение успешно обновлено' })
+    @ApiResponse({ status: 400, description: 'Неверные данные' })
+    @ApiResponse({ status: 403, description: 'Доступ запрещен' })
+    @ApiResponse({ status: 404, description: 'Клиент или подключение не найдено' })
+    async updateClientCrmConnection(
+        @Param('clientId') clientId: string,
+        @Param('connectionId') connectionId: string,
+        @Body()
+        updateConnectionData: {
+            provider?: CrmProvider;
+            accessToken?: string;
+            refreshToken?: string;
+            expiresAt?: Date;
+            domain?: string;
+            otherData?: any;
+            isActive?: boolean;
+        },
+    ) {
+        // Optional: Check if client exists (and perhaps if the connection belongs to the client)
+        await this.clientsService.findOne(+clientId);
+        // The service method should also verify the connection belongs to the user
+        return this.crmConnectionsService.updateConnection(+connectionId, updateConnectionData);
+    }
+
+    @Delete(':clientId/crm/connections/:connectionId')
+    @ApiOperation({ summary: 'Удалить CRM подключение клиента по ID подключения (Админ)' })
+    @ApiResponse({ status: 200, description: 'Подключение успешно удалено' })
+    @ApiResponse({ status: 403, description: 'Доступ запрещен' })
+    @ApiResponse({ status: 404, description: 'Клиент или подключение не найдено' })
+    async deleteClientCrmConnection(
+        @Param('clientId') clientId: string,
+        @Param('connectionId') connectionId: string,
+    ) {
+        // Optional: Check if client exists (and perhaps if the connection belongs to the client)
+        await this.clientsService.findOne(+clientId);
+        // The service method should also verify the connection belongs to the user
+        return this.crmConnectionsService.deleteConnection(+connectionId);
+    }
+
+    // Admin CRM Data Endpoints (to get data FROM the connected CRM)
+    @Get(':clientId/crm/data/all')
+    @ApiOperation({ summary: 'Получить все данные клиента из подключенной CRM (Админ)' })
+    @ApiResponse({ status: 200, description: 'Данные из CRM' })
+    @ApiResponse({ status: 403, description: 'Доступ запрещен' })
+    @ApiResponse({ status: 404, description: 'Клиент или CRM подключение не найдено' })
+    async getAllClientCrmData(@Param('clientId') clientId: string) {
+        // Need to fetch the CRM connection for this user first
+        const crmConnection = await this.crmConnectionsService.getConnection(+clientId);
+        // Then use the main CrmService to fetch data using the connection details
+        // return this.crmService.getAllUserDataFromCrm(+clientId, crmConnection);
+    }
+
+    @Post(':id/crm/connections')
+    async createCrmConnection(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() connectionData: CreateCrmConnectionDto,
+    ) {
+        return this.clientsService.createCrmConnection(id, connectionData);
     }
 }

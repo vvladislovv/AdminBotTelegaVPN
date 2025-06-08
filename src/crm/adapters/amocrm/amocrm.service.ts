@@ -1,61 +1,140 @@
+import { ICrmService } from '@/crm/interfaces/crm-service.interface';
+import { PrismaService } from '@/prisma/prisma.service';
+import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import axios, { AxiosError } from 'axios';
-import { CreateUserDto } from '../../dto/create-user.dto';
-import { UpdateUserDto } from '../../dto/update-user.dto';
-import { ICrmService } from '../../interfaces/crm-service.interface';
+import { CrmConnection } from '@prisma/client';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class AmocrmService implements ICrmService {
     private readonly logger = new Logger(AmocrmService.name);
-    private readonly baseUrl: string;
-    private readonly clientId: string;
-    private readonly clientSecret: string;
-    private readonly redirectUri: string;
-    private readonly isDevelopment: boolean;
 
-    constructor(private readonly configService: ConfigService) {
-        this.isDevelopment = this.configService.get<string>('NODE_ENV') === 'development';
+    constructor(
+        private readonly httpService: HttpService,
+        private readonly prisma: PrismaService,
+    ) {}
 
-        if (!this.isDevelopment) {
-            const baseUrl = this.configService.get<string>('AMOCRM_BASE_URL');
-            const clientId = this.configService.get<string>('AMOCRM_CLIENT_ID');
-            const clientSecret = this.configService.get<string>('AMOCRM_CLIENT_SECRET');
-            const redirectUri = this.configService.get<string>('AMOCRM_REDIRECT_URI');
+    private async makeRequest(
+        connection: CrmConnection,
+        endpoint: string,
+        method: string = 'GET',
+        data?: any,
+    ) {
+        try {
+            const url = `${connection.domain}${endpoint}`;
+            const headers = {
+                Authorization: `Bearer ${connection.accessToken}`,
+                'Content-Type': 'application/json',
+            };
 
-            if (!baseUrl || !clientId || !clientSecret || !redirectUri) {
-                throw new Error('Missing required AmoCRM configuration in production');
-            }
+            const response = await firstValueFrom(
+                this.httpService.request({
+                    method,
+                    url,
+                    headers,
+                    data,
+                }),
+            );
 
-            this.baseUrl = baseUrl;
-            this.clientId = clientId;
-            this.clientSecret = clientSecret;
-            this.redirectUri = redirectUri;
-        } else {
-            // Тестовые значения для разработки
-            this.baseUrl = 'https://test.amocrm.ru';
-            this.clientId = 'test-client-id';
-            this.clientSecret = 'test-client-secret';
-            this.redirectUri = 'http://localhost:3000/auth/amocrm/callback';
+            return response.data;
+        } catch (error: any) {
+            this.logger.error(`AmoCRM API request failed: ${error.message}`, error.stack);
+            throw error;
         }
     }
 
-    private async makeRequest(method: string, endpoint: string, data?: any) {
-        try {
-            const response = await axios({
-                method,
-                url: `${this.baseUrl}${endpoint}`,
-                headers: {
-                    Authorization: `Bearer ${await this.getAccessToken()}`,
-                    'Content-Type': 'application/json',
-                },
-                data,
-            });
-            return response.data;
-        } catch (error) {
-            await this.handleError(error);
-            throw error;
+    async getContactInfo(connection: CrmConnection, contactId: string) {
+        return this.makeRequest(connection, `/api/v4/contacts/${contactId}`);
+    }
+
+    async getRelatedData(connection: CrmConnection, entityId: string, entityType: string) {
+        return this.makeRequest(connection, `/api/v4/${entityType}/${entityId}`);
+    }
+
+    async createContact(connection: CrmConnection, data: any) {
+        const amocrmResponse = await this.makeRequest(connection, '/api/v4/contacts', 'POST', data);
+
+        // TODO: Map AmoCRM response to CrmUser fields and save to local database
+        // Need to get botId here. Assuming data contains telegramId and other user info.
+        if (amocrmResponse && amocrmResponse._embedded && amocrmResponse._embedded.contacts) {
+            const amocrmContact = amocrmResponse._embedded.contacts[0];
+            // Replace with actual botId and more accurate mapping
+            const botId = 1; // <--- THIS NEEDS TO BE REPLACED WITH ACTUAL botId
+
+            if (data.telegramId) {
+                try {
+                    const crmUser = await this.prisma.crmUser.upsert({
+                        where: { telegramId: data.telegramId },
+                        update: {
+                            username: data.telegramUsername || data.name,
+                            firstName: data.firstName || data.name,
+                            lastName: data.lastName,
+                            botId: botId, // Use the determined botId
+                        },
+                        create: {
+                            telegramId: data.telegramId,
+                            username: data.telegramUsername || data.name,
+                            firstName: data.firstName || data.name,
+                            lastName: data.lastName,
+                            botId: botId, // Use the determined botId
+                        },
+                    });
+                    this.logger.log(`CrmUser created/updated in local DB: ${crmUser.id}`);
+                } catch (dbError: any) {
+                    this.logger.error(
+                        `Failed to save CrmUser to local DB: ${dbError.message}`,
+                        dbError.stack,
+                    );
+                    // Do not rethrow, as AmoCRM contact creation was successful
+                }
+            }
         }
+
+        return amocrmResponse;
+    }
+
+    async updateContact(connection: CrmConnection, contactId: string, data: any) {
+        return this.makeRequest(connection, `/api/v4/contacts/${contactId}`, 'PATCH', data);
+    }
+
+    async createDeal(connection: CrmConnection, data: any) {
+        return this.makeRequest(connection, '/api/v4/leads', 'POST', data);
+    }
+
+    async updateDeal(connection: CrmConnection, dealId: string, data: any) {
+        return this.makeRequest(connection, `/api/v4/leads/${dealId}`, 'PATCH', data);
+    }
+
+    async createTask(connection: CrmConnection, data: any) {
+        return this.makeRequest(connection, '/api/v4/tasks', 'POST', data);
+    }
+
+    async updateTask(connection: CrmConnection, taskId: string, data: any) {
+        return this.makeRequest(connection, `/api/v4/tasks/${taskId}`, 'PATCH', data);
+    }
+
+    async createNote(connection: CrmConnection, data: any) {
+        return this.makeRequest(connection, '/api/v4/notes', 'POST', data);
+    }
+
+    async updateNote(connection: CrmConnection, noteId: string, data: any) {
+        return this.makeRequest(connection, `/api/v4/notes/${noteId}`, 'PATCH', data);
+    }
+
+    async createCompany(connection: CrmConnection, data: any) {
+        return this.makeRequest(connection, '/api/v4/companies', 'POST', data);
+    }
+
+    async updateCompany(connection: CrmConnection, companyId: string, data: any) {
+        return this.makeRequest(connection, `/api/v4/companies/${companyId}`, 'PATCH', data);
+    }
+
+    async createLead(connection: CrmConnection, data: any) {
+        return this.makeRequest(connection, '/api/v4/leads', 'POST', data);
+    }
+
+    async updateLead(connection: CrmConnection, leadId: string, data: any) {
+        return this.makeRequest(connection, `/api/v4/leads/${leadId}`, 'PATCH', data);
     }
 
     async handleError(error: unknown): Promise<void> {
@@ -66,68 +145,12 @@ export class AmocrmService implements ICrmService {
         }
     }
 
-    async createContact(data: CreateUserDto): Promise<any> {
-        const contactData = {
-            name: data.name,
-            custom_fields_values: [
-                {
-                    field_id: 123456, // ID поля email в AmoCRM
-                    values: [{ value: data.email }],
-                },
-                {
-                    field_id: 123457, // ID поля телефона в AmoCRM
-                    values: [{ value: data.phone }],
-                },
-                {
-                    field_id: 123458, // ID поля Telegram ID в AmoCRM
-                    values: [{ value: data.telegramId }],
-                },
-                {
-                    field_id: 123459, // ID поля Telegram Username в AmoCRM
-                    values: [{ value: data.telegramUsername }],
-                },
-            ],
-        };
-
-        return this.makeRequest('POST', '/api/v4/contacts', [contactData]);
-    }
-
-    async getContactInfo(id: string): Promise<any> {
-        return this.makeRequest('GET', `/api/v4/contacts/${id}`);
-    }
-
-    async updateContact(id: string, data: UpdateUserDto): Promise<any> {
-        const contactData = {
-            id,
-            name: data.name,
-            custom_fields_values: [
-                {
-                    field_id: 123456,
-                    values: [{ value: data.email }],
-                },
-                {
-                    field_id: 123457,
-                    values: [{ value: data.phone }],
-                },
-                {
-                    field_id: 123458,
-                    values: [{ value: data.telegramId }],
-                },
-                {
-                    field_id: 123459,
-                    values: [{ value: data.telegramUsername }],
-                },
-            ],
-        };
-
-        return this.makeRequest('PATCH', `/api/v4/contacts/${id}`, contactData);
-    }
-
-    async deleteContact(id: string): Promise<void> {
-        await this.makeRequest('DELETE', `/api/v4/contacts/${id}`);
-    }
-
-    async createSubscription(userId: string, planId: string): Promise<any> {
+    async createSubscription(
+        userId: string,
+        planId: string,
+        connection: CrmConnection,
+    ): Promise<any> {
+        this.logger.log(`AmocrmService: createSubscription for User ID: ${userId}`);
         const leadData = {
             name: `Subscription ${planId}`,
             price: 0,
@@ -142,14 +165,16 @@ export class AmocrmService implements ICrmService {
             ],
         };
 
-        return this.makeRequest('POST', '/api/v4/leads', [leadData]);
+        return this.makeRequest(connection, '/api/v4/leads', 'POST', [leadData]);
     }
 
-    async getSubscriptionInfo(id: string): Promise<any> {
-        return this.makeRequest('GET', `/api/v4/leads/${id}`);
+    async getSubscriptionInfo(id: string, connection: CrmConnection): Promise<any> {
+        this.logger.log(`AmocrmService: getSubscriptionInfo for ID: ${id}`);
+        return this.makeRequest(connection, `/api/v4/leads/${id}`);
     }
 
-    async updateSubscription(id: string, data: any): Promise<any> {
+    async updateSubscription(id: string, data: any, connection: CrmConnection): Promise<any> {
+        this.logger.log(`AmocrmService: updateSubscription for ID: ${id}`);
         const leadData = {
             id,
             custom_fields_values: [
@@ -160,19 +185,26 @@ export class AmocrmService implements ICrmService {
             ],
         };
 
-        return this.makeRequest('PATCH', `/api/v4/leads/${id}`, leadData);
+        return this.makeRequest(connection, `/api/v4/leads/${id}`, 'PATCH', leadData);
     }
 
-    async cancelSubscription(id: string): Promise<any> {
+    async cancelSubscription(id: string, connection: CrmConnection): Promise<any> {
+        this.logger.log(`AmocrmService: cancelSubscription for ID: ${id}`);
         const leadData = {
             id,
             status_id: 143, // ID статуса "Отменена" в AmoCRM
         };
 
-        return this.makeRequest('PATCH', `/api/v4/leads/${id}`, leadData);
+        return this.makeRequest(connection, `/api/v4/leads/${id}`, 'PATCH', leadData);
     }
 
-    async createPayment(userId: string, amount: number, currency: string): Promise<any> {
+    async createPayment(
+        userId: string,
+        amount: number,
+        currency: string,
+        connection: CrmConnection,
+    ): Promise<any> {
+        this.logger.log(`AmocrmService: createPayment for User ID: ${userId}`);
         const paymentData = {
             name: `Payment ${amount} ${currency}`,
             price: amount,
@@ -187,32 +219,37 @@ export class AmocrmService implements ICrmService {
             ],
         };
 
-        return this.makeRequest('POST', '/api/v4/leads', [paymentData]);
+        return this.makeRequest(connection, '/api/v4/leads', 'POST', [paymentData]);
     }
 
-    async getPaymentInfo(id: string): Promise<any> {
-        return this.makeRequest('GET', `/api/v4/leads/${id}`);
+    async getPaymentInfo(id: string, connection: CrmConnection): Promise<any> {
+        this.logger.log(`AmocrmService: getPaymentInfo for ID: ${id}`);
+        return this.makeRequest(connection, `/api/v4/leads/${id}`);
     }
 
-    async refundPayment(id: string, amount?: number): Promise<any> {
+    async refundPayment(id: string, connection: CrmConnection, amount?: number): Promise<any> {
+        this.logger.log(`AmocrmService: refundPayment for ID: ${id}`);
         const refundData = {
             id,
             status_id: 144, // ID статуса "Возврат" в AmoCRM
             price: amount,
         };
 
-        return this.makeRequest('PATCH', `/api/v4/leads/${id}`, refundData);
+        return this.makeRequest(connection, `/api/v4/leads/${id}`, 'PATCH', refundData);
     }
 
-    async getServers(): Promise<any[]> {
-        return this.makeRequest('GET', '/api/v4/catalogs/123463/elements'); // ID каталога серверов в AmoCRM
+    async getServers(connection: CrmConnection): Promise<any[]> {
+        this.logger.log('AmocrmService: getServers');
+        return this.makeRequest(connection, '/api/v4/catalogs/123463/elements'); // ID каталога серверов в AmoCRM
     }
 
-    async getServerInfo(id: string): Promise<any> {
-        return this.makeRequest('GET', `/api/v4/catalogs/123463/elements/${id}`);
+    async getServerInfo(id: string, connection: CrmConnection): Promise<any> {
+        this.logger.log(`AmocrmService: getServerInfo for ID: ${id}`);
+        return this.makeRequest(connection, `/api/v4/catalogs/123463/elements/${id}`);
     }
 
-    async updateServerStatus(id: string, status: string): Promise<any> {
+    async updateServerStatus(id: string, status: string, connection: CrmConnection): Promise<any> {
+        this.logger.log(`AmocrmService: updateServerStatus for ID: ${id}`);
         const serverData = {
             id,
             custom_fields_values: [
@@ -223,10 +260,20 @@ export class AmocrmService implements ICrmService {
             ],
         };
 
-        return this.makeRequest('PATCH', `/api/v4/catalogs/123463/elements/${id}`, serverData);
+        return this.makeRequest(
+            connection,
+            `/api/v4/catalogs/123463/elements/${id}`,
+            'PATCH',
+            serverData,
+        );
     }
 
-    async generateConfig(userId: string, serverId: string): Promise<any> {
+    async generateConfig(
+        userId: string,
+        serverId: string,
+        connection: CrmConnection,
+    ): Promise<any> {
+        this.logger.log(`AmocrmService: generateConfig for User ID: ${userId}`);
         const configData = {
             name: `Config for user ${userId}`,
             _embedded: {
@@ -240,43 +287,48 @@ export class AmocrmService implements ICrmService {
             ],
         };
 
-        return this.makeRequest('POST', '/api/v4/leads', [configData]);
+        return this.makeRequest(connection, '/api/v4/leads', 'POST', [configData]);
     }
 
-    async getConfigInfo(id: string): Promise<any> {
-        return this.makeRequest('GET', `/api/v4/leads/${id}`);
+    async getConfigInfo(id: string, connection: CrmConnection): Promise<any> {
+        this.logger.log(`AmocrmService: getConfigInfo for ID: ${id}`);
+        return this.makeRequest(connection, `/api/v4/leads/${id}`);
     }
 
-    async revokeConfig(id: string): Promise<any> {
+    async revokeConfig(id: string, connection: CrmConnection): Promise<any> {
+        this.logger.log(`AmocrmService: revokeConfig for ID: ${id}`);
         const configData = {
             id,
             status_id: 145, // ID статуса "Отозвана" в AmoCRM
         };
 
-        return this.makeRequest('PATCH', `/api/v4/leads/${id}`, configData);
+        return this.makeRequest(connection, `/api/v4/leads/${id}`, 'PATCH', configData);
     }
 
-    private async getAccessToken(): Promise<string> {
-        if (this.isDevelopment) {
-            return 'test-access-token';
+    async getAllUserDataFromCrm(userId: string, connection: CrmConnection): Promise<any> {
+        this.logger.log(`AmocrmService: getAllUserDataFromCrm for User ID: ${userId}`);
+        const userData: any = {};
+
+        try {
+            userData.contact = await this.getContactInfo(connection, userId);
+        } catch (error: any) {
+            this.logger.error(`Failed to get contact info: ${error.message}`);
+            userData.contact = null;
         }
 
         try {
-            const response = await axios.post(`${this.baseUrl}/oauth2/access_token`, {
-                client_id: this.clientId,
-                client_secret: this.clientSecret,
-                grant_type: 'client_credentials',
-                redirect_uri: this.redirectUri,
-            });
-
-            return response.data.access_token;
-        } catch (error) {
-            if (error instanceof AxiosError) {
-                this.logger.error(`Failed to get AmoCRM access token: ${error.message}`);
-            } else {
-                this.logger.error('Failed to get AmoCRM access token: Unknown error');
-            }
-            throw error;
+            // Add other data fetching as needed
+            userData.subscriptions = await this.getSubscriptionInfo(userId, connection);
+            userData.payments = await this.getPaymentInfo(userId, connection);
+        } catch (error: any) {
+            this.logger.error(`Failed to get related data: ${error.message}`);
         }
+
+        return userData;
+    }
+
+    async deleteContact(connection: CrmConnection, contactId: string): Promise<void> {
+        // TODO: Реализовать удаление контакта через AmoCRM API
+        return;
     }
 }

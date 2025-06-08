@@ -2,12 +2,17 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { RegisterUserDto } from '../auth/dto/register-user.dto';
+import { CrmConnectionsService } from '../crm/crm-connections.service';
+import { CreateCrmConnectionDto } from '../crm/dto/create-crm-connection.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateClientDto } from './dto/update-client.dto';
 
 @Injectable()
 export class ClientsService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private crmConnectionsService: CrmConnectionsService,
+    ) {}
 
     async create(registerUserDto: RegisterUserDto) {
         const existingUser = await this.prisma.user.findUnique({
@@ -160,7 +165,7 @@ export class ClientsService {
                 this.prisma.user.count(),
                 this.prisma.subscription.count({
                     where: {
-                        expiresAt: { gt: new Date() },
+                        periodEnd: { gt: new Date() },
                     },
                 }),
                 this.prisma.ticket.count(),
@@ -225,5 +230,12 @@ export class ClientsService {
         }
 
         return user;
+    }
+
+    async createCrmConnection(clientId: number, dto: CreateCrmConnectionDto) {
+        return this.crmConnectionsService.createConnection({
+            ...dto,
+            userId: clientId,
+        });
     }
 }
