@@ -50,6 +50,11 @@ enum PaymentMethod {
   OTHER
 }
 
+enum TelegapayTransactionType {
+  PAYIN
+  PAYOUT
+}
+
 model Payment {
   id           String         @id @default(uuid())
   userId       Int
@@ -58,7 +63,9 @@ model Payment {
   currency     String         @default("RUB")
   status       PaymentStatus  @default(PENDING)
   method       PaymentMethod
-  externalId   String?        // External payment ID from payment provider
+  externalId   String?        // External payment ID from payment provider (e.g., Telegapay transaction_id or payout_id)
+  telegapayTransactionType TelegapayTransactionType?
+  telegapayStatus         String?        // Raw status from Telegapay (awaiting, completed, etc.)
   orderId      String?        // Our internal order ID
   description  String?
   metadata     String?        // Store any additional payment data as JSON string

@@ -5,6 +5,66 @@
     },
     "variable": [
         {
+            "key": "baseUrl",
+            "value": "http://localhost:3000",
+            "type": "default",
+            "description": "Base URL for the API"
+        },
+        {
+            "key": "token",
+            "value": "",
+            "type": "default",
+            "description": "JWT token for authentication"
+        },
+        {
+            "key": "clientId",
+            "value": "1",
+            "type": "default",
+            "description": "Client ID for admin operations"
+        },
+        {
+            "key": "botId",
+            "value": "1",
+            "type": "default",
+            "description": "Bot ID for operations"
+        },
+        {
+            "key": "ticketId",
+            "value": "1",
+            "type": "default",
+            "description": "Ticket ID for operations"
+        },
+        {
+            "key": "connectionId",
+            "value": "1",
+            "type": "default",
+            "description": "CRM Connection ID for operations"
+        },
+        {
+            "key": "linkId",
+            "value": "1",
+            "type": "default",
+            "description": "Referral Link ID for operations"
+        },
+        {
+            "key": "referralCode",
+            "value": "",
+            "type": "default",
+            "description": "Referral code for testing"
+        },
+        {
+            "key": "telegapayExternalId",
+            "value": "",
+            "type": "default",
+            "description": "Telegapay External ID for payment tracking"
+        },
+        {
+            "key": "telegapayPaymentUrl",
+            "value": "",
+            "type": "default",
+            "description": "Telegapay Payment URL"
+        },
+        {
             "key": "telegapayBaseUrl",
             "value": "http://secure.telegapay.link/api/v1",
             "type": "default",
@@ -15,6 +75,18 @@
             "value": "YOUR_TELEGA_PAY_API_KEY_HERE",
             "type": "secret",
             "description": "API Key for Telegapay (replace with your actual key)"
+        },
+		{
+            "key": "telegapayTransactionId",
+            "value": "",
+            "type": "default",
+            "description": "Telegapay Transaction ID for testing"
+        },
+        {
+            "key": "telegapayPayoutId",
+            "value": "",
+            "type": "default",
+            "description": "Telegapay Payout ID for testing"
         }
     ],
     "item": [
@@ -1462,10 +1534,155 @@
                                         }
                                     }
                                 }
-                            ]
-                        }
-                    ]
-                }
+                                ]
+                                },
+                                {
+                                "name": "Admin Extended",
+                                "item": [
+                                {
+                                "name": "Dashboard Stats",
+                                "request": {
+                                "method": "GET",
+                                "header": [
+                                {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                                }
+                                ],
+                                "url": {
+                                "raw": "{{baseUrl}}/admin/clients/stats",
+                                "host": ["{{baseUrl}}"],
+                                "path": ["admin", "clients", "stats"]
+                                }
+                                }
+                                },
+                                {
+                                "name": "Get Client Activity",
+                                "request": {
+                                "method": "GET",
+                                "header": [
+                                {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                                }
+                                ],
+                                "url": {
+                                "raw": "{{baseUrl}}/admin/clients/{{clientId}}/activity",
+                                "host": ["{{baseUrl}}"],
+                                "path": ["admin", "clients", "{{clientId}}", "activity"]
+                                }
+                                }
+                                },
+                                {
+                                "name": "Client CRM Management",
+                                "item": [
+                                {
+                                "name": "Create CRM Connection for Client",
+                                "request": {
+                                "method": "POST",
+                                "header": [
+                                {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                                },
+                                {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                                }
+                                ],
+                                "body": {
+                                "mode": "raw",
+                                "raw": "{\n    \"provider\": \"AMOCRM\",\n    \"accessToken\": \"CLIENT_ACCESS_TOKEN\",\n    \"refreshToken\": \"CLIENT_REFRESH_TOKEN\",\n    \"expiresAt\": \"2025-12-31T23:59:59Z\",\n    \"domain\": \"https://client-subdomain.amocrm.ru\",\n    \"otherData\": {\n        \"clientId\": \"client_id\",\n        \"clientSecret\": \"client_secret\"\n    },\n    \"isActive\": true\n}"
+                                },
+                                "url": {
+                                "raw": "{{baseUrl}}/admin/clients/{{clientId}}/crm/connections",
+                                "host": ["{{baseUrl}}"],
+                                "path": ["admin", "clients", "{{clientId}}", "crm", "connections"]
+                                }
+                                }
+                                },
+                                {
+                                "name": "Get Client CRM Connections",
+                                "request": {
+                                "method": "GET",
+                                "header": [
+                                {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                                }
+                                ],
+                                "url": {
+                                "raw": "{{baseUrl}}/admin/clients/{{clientId}}/crm/connections",
+                                "host": ["{{baseUrl}}"],
+                                "path": ["admin", "clients", "{{clientId}}", "crm", "connections"]
+                                }
+                                }
+                                },
+                                {
+                                "name": "Update Client CRM Connection",
+                                "request": {
+                                "method": "PATCH",
+                                "header": [
+                                {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                                },
+                                {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                                }
+                                ],
+                                "body": {
+                                "mode": "raw",
+                                "raw": "{\n    \"accessToken\": \"UPDATED_ACCESS_TOKEN\",\n    \"refreshToken\": \"UPDATED_REFRESH_TOKEN\",\n    \"isActive\": false\n}"
+                                },
+                                "url": {
+                                "raw": "{{baseUrl}}/admin/clients/{{clientId}}/crm/connections/{{connectionId}}",
+                                "host": ["{{baseUrl}}"],
+                                "path": ["admin", "clients", "{{clientId}}", "crm", "connections", "{{connectionId}}"]
+                                }
+                                }
+                                },
+                                {
+                                "name": "Delete Client CRM Connection",
+                                "request": {
+                                "method": "DELETE",
+                                "header": [
+                                {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                                }
+                                ],
+                                "url": {
+                                "raw": "{{baseUrl}}/admin/clients/{{clientId}}/crm/connections/{{connectionId}}",
+                                "host": ["{{baseUrl}}"],
+                                "path": ["admin", "clients", "{{clientId}}", "crm", "connections", "{{connectionId}}"]
+                                }
+                                }
+                                },
+                                {
+                                "name": "Get All Client CRM Data",
+                                "request": {
+                                "method": "GET",
+                                "header": [
+                                {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                                }
+                                ],
+                                "url": {
+                                "raw": "{{baseUrl}}/admin/clients/{{clientId}}/crm/data/all",
+                                "host": ["{{baseUrl}}"],
+                                "path": ["admin", "clients", "{{clientId}}", "crm", "data", "all"]
+                                }
+                                }
+                                }
+                                ]
+                                }
+                                ]
+                                }
+                                ]
+                                }
             ]
         },
         {
@@ -1553,6 +1770,287 @@
                             "raw": "{{baseUrl}}/billing/webhook/telegram-pay",
                             "host": ["{{baseUrl}}"],
                             "path": ["billing", "webhook", "telegram-pay"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "TelegaPay",
+            "item": [
+                {
+                    "name": "Get Payment Methods",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.success && jsonData.methods) {",
+                                    "    console.log('Available payment methods:', jsonData.methods);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"amount\": 1000.0,\n    \"currency\": \"RUB\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/telegapay/get-methods",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["telegapay", "get-methods"]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Requisites",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.success && jsonData.transaction_id) {",
+                                    "    pm.environment.set('telegapayTransactionId', jsonData.transaction_id);",
+                                    "    console.log('Transaction ID saved:', jsonData.transaction_id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"amount\": 1000.0,\n    \"currency\": \"RUB\",\n    \"method\": \"BANK_SBER\",\n    \"order_id\": \"test_order_123\",\n    \"user_id\": \"user_123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/telegapay/get-requisites",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["telegapay", "get-requisites"]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Paylink",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.telegapay_transaction_id) {",
+                                    "    pm.environment.set('telegapayTransactionId', jsonData.telegapay_transaction_id);",
+                                    "    console.log('Transaction ID saved:', jsonData.telegapay_transaction_id);",
+                                    "}",
+                                    "if (jsonData.paylink) {",
+                                    "    console.log('Payment link:', jsonData.paylink);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"amount\": 1000.0,\n    \"currency\": \"RUB\",\n    \"payment_method\": \"BANK_SBER\",\n    \"description\": \"Test payment\",\n    \"return_url\": \"https://example.com/success\",\n    \"user_id\": \"1\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/telegapay/create-paylink",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["telegapay", "create-paylink"]
+                        }
+                    }
+                },
+                {
+                    "name": "Check Payment Status",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"transaction_id\": \"{{telegapayTransactionId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/telegapay/check-status",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["telegapay", "check-status"]
+                        }
+                    }
+                },
+                {
+                    "name": "Confirm Payment",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"transaction_id\": \"{{telegapayTransactionId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/telegapay/confirm-payment",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["telegapay", "confirm-payment"]
+                        }
+                    }
+                },
+                {
+                    "name": "Cancel Payment",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"transaction_id\": \"{{telegapayTransactionId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/telegapay/cancel-payment",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["telegapay", "cancel-payment"]
+                        }
+                    }
+                },
+                {
+                    "name": "Send Receipt",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"transaction_id\": \"{{telegapayTransactionId}}\",\n    \"receipt_url\": \"https://example.com/receipt.jpg\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/telegapay/send-receipt",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["telegapay", "send-receipt"]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Payout",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.telegapay_transaction_id) {",
+                                    "    pm.environment.set('telegapayPayoutId', jsonData.telegapay_transaction_id);",
+                                    "    console.log('Payout ID saved:', jsonData.telegapay_transaction_id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"amount\": 500.0,\n    \"currency\": \"RUB\",\n    \"requisite_type\": \"CARD\",\n    \"requisite_value\": \"2200123456789012\",\n    \"holder_name\": \"IVAN IVANOV\",\n    \"bank_name\": \"SBER\",\n    \"external_id\": \"payout_test_123\",\n    \"userId\": 1\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/telegapay/create-payout",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["telegapay", "create-payout"]
+                        }
+                    }
+                },
+                {
+                    "name": "Cancel Payout",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"payout_id\": \"{{telegapayPayoutId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/telegapay/cancel-payout",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["telegapay", "cancel-payout"]
+                        }
+                    }
+                },
+                {
+                    "name": "Webhook Simulation",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "test_webhook_key"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"transaction_id\": \"{{telegapayTransactionId}}\",\n    \"status\": \"completed\",\n    \"type\": \"payin\",\n    \"amount\": 1000.0,\n    \"amount_usdt\": 10.50,\n    \"currency\": \"RUB\",\n    \"created_at\": \"2025-01-01T12:00:00Z\",\n    \"completed_at\": \"2025-01-01T12:05:00Z\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/telegapay/webhook",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["telegapay", "webhook"]
                         }
                     }
                 }
