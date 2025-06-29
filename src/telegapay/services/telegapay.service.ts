@@ -505,8 +505,7 @@ export class TelegapayService {
         paymentRecord = payments[0];
         this.logger.log(`Found payment record with ID ${paymentRecord.id} using alternative search by orderId.`);
       } else {
-        this.logger.error(`No payment record found for transaction_id ${dto.transaction_id} even with alternative search.`);
-        throw new NotFoundException(`PAYIN Payment with externalId ${dto.transaction_id} not found.`);
+        this.logger.warn(`No payment record found for transaction_id ${dto.transaction_id} even with alternative search. Proceeding with Telegapay API call.`);
       }
     }
 
@@ -517,27 +516,34 @@ export class TelegapayService {
 
       const telegapayData = response.data;
 
-      // Update payment record metadata or status if needed
-      const updatedPaymentRecord = await this.prismaService.payment.update({
-        where: { id: paymentRecord.id },
-        data: {
-          metadata: JSON.stringify({
-            ...(JSON.parse(paymentRecord.metadata || '{}')),
-            telegapayConfirmations: [
-              ...(JSON.parse(paymentRecord.metadata || '{}').telegapayConfirmations || []),
-              { confirmedAt: new Date().toISOString(), request: dto, responseData: telegapayData || {} },
-            ],
-          }),
-        },
-      });
+      let updatedPaymentRecord;
+      if (paymentRecord) {
+        // Update payment record metadata or status if needed
+        updatedPaymentRecord = await this.prismaService.payment.update({
+          where: { id: paymentRecord.id },
+          data: {
+            metadata: JSON.stringify({
+              ...(JSON.parse(paymentRecord.metadata || '{}')),
+              telegapayConfirmations: [
+                ...(JSON.parse(paymentRecord.metadata || '{}').telegapayConfirmations || []),
+                { confirmedAt: new Date().toISOString(), request: dto, responseData: telegapayData || {} },
+              ],
+            }),
+          },
+        });
 
-      this.logger.log(
-        `Payment confirmed for Telegapay transaction_id ${dto.transaction_id}. Payment ID: ${paymentRecord.id}`,
-      );
+        this.logger.log(
+          `Payment confirmed for Telegapay transaction_id ${dto.transaction_id}. Payment ID: ${paymentRecord.id}`,
+        );
+      } else {
+        this.logger.log(
+          `Payment confirmed for Telegapay transaction_id ${dto.transaction_id}. No local record found, but API call successful.`,
+        );
+      }
 
       return {
         message: 'Payment confirmed successfully with Telegapay',
-        payment_id: updatedPaymentRecord.id,
+        payment_id: updatedPaymentRecord?.id || 'not_found_locally',
         telegapay_transaction_id: dto.transaction_id,
         telegapay_response: telegapayData || { success: true },
       };
