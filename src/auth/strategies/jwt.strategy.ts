@@ -5,9 +5,10 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 
 interface JwtPayload {
-    sub: number;
+    sub?: number;
+    id?: number;
     email: string;
-    role: string;
+    role?: string;
 }
 
 @Injectable()
@@ -29,18 +30,35 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     async validate(payload: JwtPayload) {
+        console.log('JWT Payload received:', payload);
+        
+        // Handle both 'sub' and 'id' fields for backward compatibility
+        const userId = payload.sub || payload.id;
+        
+        console.log('Extracted userId:', userId);
+        
+        if (!userId) {
+            console.log('No userId found in payload');
+            return null;
+        }
+
         const user = await this.prisma.user.findUnique({
-            where: { id: payload.sub },
+            where: { id: userId },
         });
+
+        console.log('User found:', user ? 'Yes' : 'No');
 
         if (!user) {
             return null;
         }
 
-        return {
-            id: payload.sub,
-            email: payload.email,
-            role: payload.role,
+        const result = {
+            id: userId,
+            email: payload.email || user.email,
+            role: payload.role || user.role,
         };
+        
+        console.log('Returning user:', result);
+        return result;
     }
 }

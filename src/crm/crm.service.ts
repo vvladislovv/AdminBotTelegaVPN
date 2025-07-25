@@ -13,6 +13,11 @@ export class CrmService {
     ) {}
 
     private getAdapter(connection: CrmConnection) {
+        if (!connection || !connection.provider) {
+            this.logger.error('Invalid connection object provided');
+            return null;
+        }
+
         switch (connection.provider) {
             case CrmProvider.AMOCRM:
                 return this.amocrmService;

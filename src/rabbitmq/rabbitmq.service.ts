@@ -11,6 +11,7 @@ interface RabbitMQMessage {
 export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     private connection: Connection | null = null;
     private channel: Channel | null = null;
+    private isEnabled = false;
 
     constructor(private configService: ConfigService) {}
 
@@ -18,20 +19,57 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
         try {
             const url = this.configService.get<string>('RABBITMQ_URL');
             if (!url) {
-                throw new Error('RABBITMQ_URL is not defined');
+                console.warn('RABBITMQ_URL is not defined, RabbitMQ will be disabled');
+                this.isEnabled = false;
+                return;
             }
-            this.connection = await connect(url);
-            if (!this.connection) {
-                throw new Error('Failed to connect to RabbitMQ');
+
+            await this.connectWithRetry(url, 3, 2000);
+            this.isEnabled = true;
+        } catch (error: any) {
+            console.warn(
+                'RabbitMQ initialization failed, continuing without RabbitMQ:',
+                error?.message || 'Unknown error',
+            );
+            this.isEnabled = false;
+            // Don't throw error, just continue without RabbitMQ
+        }
+    }
+
+    private async connectWithRetry(url: string, maxRetries: number, delay: number): Promise<void> {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                console.log(
+                    `Attempting to connect to RabbitMQ (attempt ${attempt}/${maxRetries})...`,
+                );
+                this.connection = await connect(url);
+
+                if (!this.connection) {
+                    throw new Error('Failed to connect to RabbitMQ');
+                }
+
+                this.channel = await this.connection.createChannel();
+                if (!this.channel) {
+                    throw new Error('Failed to create channel');
+                }
+
+                await this.channel.assertQueue('bot_commands', { durable: true });
+                console.log('Successfully connected to RabbitMQ');
+                return;
+            } catch (error: any) {
+                console.error(
+                    `Failed to initialize RabbitMQ (attempt ${attempt}/${maxRetries}):`,
+                    error?.message || 'Unknown error',
+                );
+
+                if (attempt === maxRetries) {
+                    console.warn('Max retries reached. RabbitMQ will be disabled.');
+                    return;
+                }
+
+                console.log(`Retrying in ${delay}ms...`);
+                await new Promise((resolve) => setTimeout(resolve, delay));
             }
-            this.channel = await this.connection.createChannel();
-            if (!this.channel) {
-                throw new Error('Failed to create channel');
-            }
-            await this.channel.assertQueue('bot_commands', { durable: true });
-        } catch (error) {
-            console.error('Failed to initialize RabbitMQ:', error);
-            throw error;
         }
     }
 
@@ -43,23 +81,34 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
             if (this.connection) {
                 await this.connection.close();
             }
-        } catch (error) {
-            console.error('Failed to close RabbitMQ connection:', error);
+        } catch (error: any) {
+            console.error(
+                'Failed to close RabbitMQ connection:',
+                error?.message || 'Unknown error',
+            );
         }
     }
 
+    isRabbitMQEnabled(): boolean {
+        return this.isEnabled;
+    }
+
     publishMessage(queue: string, message: RabbitMQMessage): void {
-        if (!this.channel) {
-            throw new Error('RabbitMQ channel is not initialized');
+        if (!this.isEnabled || !this.channel) {
+            console.debug('RabbitMQ is disabled or channel not available, message ignored:', {
+                type: message.type,
+            });
+            return;
         }
 
         try {
             this.channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)), {
                 persistent: true,
             });
-        } catch (error) {
-            console.error('Failed to publish message:', error);
-            throw error;
+            console.debug('Message published to RabbitMQ:', { type: message.type, queue });
+        } catch (error: any) {
+            console.error('Failed to publish message:', error?.message || 'Unknown error');
+            // Don't throw error to prevent application crash
         }
     }
 
@@ -67,8 +116,9 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
         queue: string,
         callback: (message: RabbitMQMessage) => Promise<void>,
     ): Promise<void> {
-        if (!this.channel) {
-            throw new Error('RabbitMQ channel is not initialized');
+        if (!this.isEnabled || !this.channel) {
+            console.warn('RabbitMQ is disabled or channel not available, cannot consume messages');
+            return;
         }
 
         try {
@@ -78,15 +128,18 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
                         const content = JSON.parse(msg.content.toString()) as RabbitMQMessage;
                         await callback(content);
                         this.channel?.ack(msg);
-                    } catch (error) {
-                        console.error('Error processing message:', error);
+                    } catch (error: any) {
+                        console.error(
+                            'Error processing message:',
+                            error?.message || 'Unknown error',
+                        );
                         this.channel?.nack(msg, false, false);
                     }
                 }
             });
-        } catch (error) {
-            console.error('Failed to consume messages:', error);
-            throw error;
+        } catch (error: any) {
+            console.error('Failed to consume messages:', error?.message || 'Unknown error');
+            // Don't throw error to prevent application crash
         }
     }
 }

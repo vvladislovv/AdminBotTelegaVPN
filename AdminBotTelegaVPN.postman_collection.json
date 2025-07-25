@@ -76,7 +76,7 @@
             "type": "secret",
             "description": "API Key for Telegapay (replace with your actual key)"
         },
-		{
+        {
             "key": "telegapayTransactionId",
             "value": "",
             "type": "default",
@@ -1534,155 +1534,188 @@
                                         }
                                     }
                                 }
-                                ]
+                            ]
+                        },
+                        {
+                            "name": "Admin Extended",
+                            "item": [
+                                {
+                                    "name": "Dashboard Stats",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/clients/stats",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": ["admin", "clients", "stats"]
+                                        }
+                                    }
                                 },
                                 {
-                                "name": "Admin Extended",
-                                "item": [
-                                {
-                                "name": "Dashboard Stats",
-                                "request": {
-                                "method": "GET",
-                                "header": [
-                                {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                                }
-                                ],
-                                "url": {
-                                "raw": "{{baseUrl}}/admin/clients/stats",
-                                "host": ["{{baseUrl}}"],
-                                "path": ["admin", "clients", "stats"]
-                                }
-                                }
+                                    "name": "Get Client Activity",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/admin/clients/{{clientId}}/activity",
+                                            "host": ["{{baseUrl}}"],
+                                            "path": ["admin", "clients", "{{clientId}}", "activity"]
+                                        }
+                                    }
                                 },
                                 {
-                                "name": "Get Client Activity",
-                                "request": {
-                                "method": "GET",
-                                "header": [
-                                {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
+                                    "name": "Client CRM Management",
+                                    "item": [
+                                        {
+                                            "name": "Create CRM Connection for Client",
+                                            "request": {
+                                                "method": "POST",
+                                                "header": [
+                                                    {
+                                                        "key": "Authorization",
+                                                        "value": "Bearer {{token}}"
+                                                    },
+                                                    {
+                                                        "key": "Content-Type",
+                                                        "value": "application/json"
+                                                    }
+                                                ],
+                                                "body": {
+                                                    "mode": "raw",
+                                                    "raw": "{\n    \"provider\": \"AMOCRM\",\n    \"accessToken\": \"CLIENT_ACCESS_TOKEN\",\n    \"refreshToken\": \"CLIENT_REFRESH_TOKEN\",\n    \"expiresAt\": \"2025-12-31T23:59:59Z\",\n    \"domain\": \"https://client-subdomain.amocrm.ru\",\n    \"otherData\": {\n        \"clientId\": \"client_id\",\n        \"clientSecret\": \"client_secret\"\n    },\n    \"isActive\": true\n}"
+                                                },
+                                                "url": {
+                                                    "raw": "{{baseUrl}}/admin/clients/{{clientId}}/crm/connections",
+                                                    "host": ["{{baseUrl}}"],
+                                                    "path": [
+                                                        "admin",
+                                                        "clients",
+                                                        "{{clientId}}",
+                                                        "crm",
+                                                        "connections"
+                                                    ]
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "name": "Get Client CRM Connections",
+                                            "request": {
+                                                "method": "GET",
+                                                "header": [
+                                                    {
+                                                        "key": "Authorization",
+                                                        "value": "Bearer {{token}}"
+                                                    }
+                                                ],
+                                                "url": {
+                                                    "raw": "{{baseUrl}}/admin/clients/{{clientId}}/crm/connections",
+                                                    "host": ["{{baseUrl}}"],
+                                                    "path": [
+                                                        "admin",
+                                                        "clients",
+                                                        "{{clientId}}",
+                                                        "crm",
+                                                        "connections"
+                                                    ]
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "name": "Update Client CRM Connection",
+                                            "request": {
+                                                "method": "PATCH",
+                                                "header": [
+                                                    {
+                                                        "key": "Authorization",
+                                                        "value": "Bearer {{token}}"
+                                                    },
+                                                    {
+                                                        "key": "Content-Type",
+                                                        "value": "application/json"
+                                                    }
+                                                ],
+                                                "body": {
+                                                    "mode": "raw",
+                                                    "raw": "{\n    \"accessToken\": \"UPDATED_ACCESS_TOKEN\",\n    \"refreshToken\": \"UPDATED_REFRESH_TOKEN\",\n    \"isActive\": false\n}"
+                                                },
+                                                "url": {
+                                                    "raw": "{{baseUrl}}/admin/clients/{{clientId}}/crm/connections/{{connectionId}}",
+                                                    "host": ["{{baseUrl}}"],
+                                                    "path": [
+                                                        "admin",
+                                                        "clients",
+                                                        "{{clientId}}",
+                                                        "crm",
+                                                        "connections",
+                                                        "{{connectionId}}"
+                                                    ]
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "name": "Delete Client CRM Connection",
+                                            "request": {
+                                                "method": "DELETE",
+                                                "header": [
+                                                    {
+                                                        "key": "Authorization",
+                                                        "value": "Bearer {{token}}"
+                                                    }
+                                                ],
+                                                "url": {
+                                                    "raw": "{{baseUrl}}/admin/clients/{{clientId}}/crm/connections/{{connectionId}}",
+                                                    "host": ["{{baseUrl}}"],
+                                                    "path": [
+                                                        "admin",
+                                                        "clients",
+                                                        "{{clientId}}",
+                                                        "crm",
+                                                        "connections",
+                                                        "{{connectionId}}"
+                                                    ]
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "name": "Get All Client CRM Data",
+                                            "request": {
+                                                "method": "GET",
+                                                "header": [
+                                                    {
+                                                        "key": "Authorization",
+                                                        "value": "Bearer {{token}}"
+                                                    }
+                                                ],
+                                                "url": {
+                                                    "raw": "{{baseUrl}}/admin/clients/{{clientId}}/crm/data/all",
+                                                    "host": ["{{baseUrl}}"],
+                                                    "path": [
+                                                        "admin",
+                                                        "clients",
+                                                        "{{clientId}}",
+                                                        "crm",
+                                                        "data",
+                                                        "all"
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    ]
                                 }
-                                ],
-                                "url": {
-                                "raw": "{{baseUrl}}/admin/clients/{{clientId}}/activity",
-                                "host": ["{{baseUrl}}"],
-                                "path": ["admin", "clients", "{{clientId}}", "activity"]
-                                }
-                                }
-                                },
-                                {
-                                "name": "Client CRM Management",
-                                "item": [
-                                {
-                                "name": "Create CRM Connection for Client",
-                                "request": {
-                                "method": "POST",
-                                "header": [
-                                {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                                },
-                                {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                                }
-                                ],
-                                "body": {
-                                "mode": "raw",
-                                "raw": "{\n    \"provider\": \"AMOCRM\",\n    \"accessToken\": \"CLIENT_ACCESS_TOKEN\",\n    \"refreshToken\": \"CLIENT_REFRESH_TOKEN\",\n    \"expiresAt\": \"2025-12-31T23:59:59Z\",\n    \"domain\": \"https://client-subdomain.amocrm.ru\",\n    \"otherData\": {\n        \"clientId\": \"client_id\",\n        \"clientSecret\": \"client_secret\"\n    },\n    \"isActive\": true\n}"
-                                },
-                                "url": {
-                                "raw": "{{baseUrl}}/admin/clients/{{clientId}}/crm/connections",
-                                "host": ["{{baseUrl}}"],
-                                "path": ["admin", "clients", "{{clientId}}", "crm", "connections"]
-                                }
-                                }
-                                },
-                                {
-                                "name": "Get Client CRM Connections",
-                                "request": {
-                                "method": "GET",
-                                "header": [
-                                {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                                }
-                                ],
-                                "url": {
-                                "raw": "{{baseUrl}}/admin/clients/{{clientId}}/crm/connections",
-                                "host": ["{{baseUrl}}"],
-                                "path": ["admin", "clients", "{{clientId}}", "crm", "connections"]
-                                }
-                                }
-                                },
-                                {
-                                "name": "Update Client CRM Connection",
-                                "request": {
-                                "method": "PATCH",
-                                "header": [
-                                {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                                },
-                                {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                                }
-                                ],
-                                "body": {
-                                "mode": "raw",
-                                "raw": "{\n    \"accessToken\": \"UPDATED_ACCESS_TOKEN\",\n    \"refreshToken\": \"UPDATED_REFRESH_TOKEN\",\n    \"isActive\": false\n}"
-                                },
-                                "url": {
-                                "raw": "{{baseUrl}}/admin/clients/{{clientId}}/crm/connections/{{connectionId}}",
-                                "host": ["{{baseUrl}}"],
-                                "path": ["admin", "clients", "{{clientId}}", "crm", "connections", "{{connectionId}}"]
-                                }
-                                }
-                                },
-                                {
-                                "name": "Delete Client CRM Connection",
-                                "request": {
-                                "method": "DELETE",
-                                "header": [
-                                {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                                }
-                                ],
-                                "url": {
-                                "raw": "{{baseUrl}}/admin/clients/{{clientId}}/crm/connections/{{connectionId}}",
-                                "host": ["{{baseUrl}}"],
-                                "path": ["admin", "clients", "{{clientId}}", "crm", "connections", "{{connectionId}}"]
-                                }
-                                }
-                                },
-                                {
-                                "name": "Get All Client CRM Data",
-                                "request": {
-                                "method": "GET",
-                                "header": [
-                                {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                                }
-                                ],
-                                "url": {
-                                "raw": "{{baseUrl}}/admin/clients/{{clientId}}/crm/data/all",
-                                "host": ["{{baseUrl}}"],
-                                "path": ["admin", "clients", "{{clientId}}", "crm", "data", "all"]
-                                }
-                                }
-                                }
-                                ]
-                                }
-                                ]
-                                }
-                                ]
-                                }
+                            ]
+                        }
+                    ]
+                }
             ]
         },
         {

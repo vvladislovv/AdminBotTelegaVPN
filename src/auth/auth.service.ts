@@ -50,7 +50,7 @@ export class AuthService {
         }
 
         // Генерируем токен
-        const token = this.jwtService.sign({ id: user.id, email: user.email });
+        const token = this.jwtService.sign({ email: user.email, sub: user.id, role: user.role });
 
         return {
             access_token: token,
@@ -90,8 +90,15 @@ export class AuthService {
     async validateToken(token: string) {
         try {
             const payload = this.jwtService.verify(token);
+            // Handle both 'sub' and 'id' fields for backward compatibility
+            const userId = payload.sub || payload.id;
+            
+            if (!userId) {
+                throw new UnauthorizedException();
+            }
+            
             const user = await this.prisma.user.findUnique({
-                where: { id: payload.sub },
+                where: { id: userId },
             });
             if (!user) {
                 throw new UnauthorizedException();
